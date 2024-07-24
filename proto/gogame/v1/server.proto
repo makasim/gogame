@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package gogame.v1;
+
+enum Color {
+  COLOR_UNSPECIFIED = 0;
+  COLOR_BLACK = 1;
+  COLOR_WHITE = 2;
+}
+
+message Player {
+  string name = 2;
+  Color color = 3;
+}
+
+message Game {
+  string id = 1;
+  string name = 2;
+  Player player1 = 3;
+  Player player2 = 4;
+}
+
+message CreateGameRequest {
+  string name = 1;
+  Player player1 = 2;
+}
+
+message CreateGameResponse {
+  Game game = 1;
+}
+
+message JoinGameRequest {
+  string game_id = 1;
+  Player player2 = 2;
+}
+
+message JoinGameResponse {
+  Game game = 1;
+}
+
+service GameService {
+  rpc CreateGame(CreateGameRequest) returns (CreateGameResponse) {}
+  rpc JoinGame(JoinGameRequest) returns (JoinGameResponse) {}
+}

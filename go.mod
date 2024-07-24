@@ -1,0 +1,12 @@
+module github.com/makasim/gogame
+
+go 1.22
+
+require (
+	connectrpc.com/connect v1.16.2
+	github.com/makasim/flowstate v0.0.0-20240724151201-17e883a1e377
+	golang.org/x/net v0.27.0
+	google.golang.org/protobuf v1.34.2
+)
+
+require golang.org/x/text v0.16.0 // indirect
