@@ -72,11 +72,11 @@ func (s *Service) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 	stateCtx := &flowstate.StateCtx{}
 	d := &flowstate.Data{}
 
-	if err := s.e.Do(flowstate.Commit(
+	if err := s.e.Do(
 		flowstate.GetByID(stateCtx, flowstate.StateID(req.Msg.GameId), 0),
 		flowstate.DereferenceData(stateCtx, d, `game`),
 		flowstate.GetData(d),
-	)); err != nil {
+	); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
