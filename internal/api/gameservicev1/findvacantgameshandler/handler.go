@@ -2,6 +2,7 @@ package findvacantgameshandler
 
 import (
 	"context"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
@@ -24,7 +25,7 @@ func (h *Handler) FindVacantGames(ctx context.Context, _ *connect.Request[v1.Fin
 		`game.state`: `created`,
 	}).WithORLabels(map[string]string{
 		`game.state`: `started`,
-	})
+	}).WithSinceTime(time.Now().Add(-time.Minute * 5))
 
 	if err := h.e.Do(wCmd); err != nil {
 		return connect.NewError(connect.CodeInternal, err)
