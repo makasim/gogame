@@ -30,6 +30,9 @@ message Game {
 
   Move current_move = 7;
   repeated Move previous_moves = 8;
+
+  Player winner = 9;
+  string won_by = 10;
 }
 
 message CreateGameRequest {

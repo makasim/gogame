@@ -64,8 +64,8 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 
 	g.PreviousMoves = append(g.PreviousMoves, g.CurrentMove)
 	g.CurrentMove = &v1.Move{
-		PlayerId: nextPlayer(g).Id,
-		Color:    nextColor(g),
+		PlayerId: convertor.NextPlayer(g).Id,
+		Color:    convertor.NextColor(g),
 	}
 
 	if err = convertor.GameToData(g, d); err != nil {
@@ -86,18 +86,4 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 	return connect.NewResponse(&v1.MakeMoveResponse{
 		Game: g,
 	}), nil
-}
-
-func nextColor(g *v1.Game) v1.Color {
-	if g.CurrentMove.Color == v1.Color_COLOR_BLACK {
-		return v1.Color_COLOR_WHITE
-	}
-	return v1.Color_COLOR_BLACK
-}
-
-func nextPlayer(g *v1.Game) *v1.Player {
-	if g.CurrentMove.PlayerId == g.Player1.Id {
-		return g.Player2
-	}
-	return g.Player1
 }

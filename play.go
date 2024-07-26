@@ -57,7 +57,6 @@ func playPlayer1() {
 	if err != nil {
 		panic(fmt.Errorf("player1: stream game events: %w", err))
 	}
-	//defer sgeStream.Close()
 
 	x := int64(1)
 	for sgeStream.Receive() {
@@ -108,6 +107,12 @@ func playPlayer1() {
 
 			g = mmr.Msg.Game
 		case `ended`:
+			if g.Winner.Id == `player1` {
+				log.Printf("player1: won by %s", g.WonBy)
+			} else {
+				log.Printf("player1: lost by %s", g.WonBy)
+			}
+
 			return
 		default:
 			panic(fmt.Errorf("player1: unknown game state: %s", g.State))
@@ -125,7 +130,6 @@ func playPlayer2() {
 	if err != nil {
 		panic(fmt.Errorf("player2: stream vacant games: %w", err))
 	}
-	//defer svgStream.Close()
 
 	var g *v1.Game
 	for svgStream.Receive() {
@@ -167,7 +171,6 @@ func playPlayer2() {
 	if err != nil {
 		panic(fmt.Errorf("player2: stream game events: %w", err))
 	}
-	//defer sgeStream.Close()
 
 	x := int64(1)
 	for sgeStream.Receive() {
@@ -203,7 +206,12 @@ func playPlayer2() {
 			g = mmr.Msg.Game
 			log.Printf("player2: move made: %s%d", m.Y, m.X)
 		case `ended`:
-			log.Printf("player2: won")
+			if g.Winner.Id == `player2` {
+				log.Printf("player2: won by %s", g.WonBy)
+			} else {
+				log.Printf("player2: lost by %s", g.WonBy)
+			}
+
 			return
 		default:
 			panic(fmt.Errorf("player2: unknown game state: %s", g.State))
