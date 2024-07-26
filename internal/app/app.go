@@ -12,6 +12,7 @@ import (
 	"github.com/makasim/flowstate/memdriver"
 	"github.com/makasim/gogame/internal/api/gameservicev1"
 	"github.com/makasim/gogame/internal/api/gameservicev1/creategamehandler"
+	"github.com/makasim/gogame/internal/api/gameservicev1/findvacantgameshandler"
 	"github.com/makasim/gogame/internal/api/gameservicev1/joingamehandler"
 	"github.com/makasim/gogame/internal/createdflow"
 	"github.com/makasim/gogame/internal/moveflow"
@@ -34,6 +35,8 @@ func New(cfg Config) *App {
 }
 
 func (a *App) Run(ctx context.Context) error {
+	log.Println("app starting")
+
 	d := memdriver.New()
 	d.SetFlow(createdflow.New())
 	d.SetFlow(moveflow.New())
@@ -47,6 +50,7 @@ func (a *App) Run(ctx context.Context) error {
 	mux.Handle(gogamev1connect.NewGameServiceHandler(gameservicev1.New(
 		creategamehandler.New(e),
 		joingamehandler.New(e),
+		findvacantgameshandler.New(e),
 	)))
 
 	srv := &http.Server{
@@ -60,7 +64,10 @@ func (a *App) Run(ctx context.Context) error {
 		}
 	}()
 
+	log.Println("app started")
 	<-ctx.Done()
+	log.Println("app stopping")
+	defer log.Println("app stopped")
 
 	var shutdownRes error
 	shutdownCtx, shutdownCtxCancel := context.WithTimeout(context.Background(), time.Second*30)

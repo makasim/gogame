@@ -35,6 +35,9 @@ const (
 const (
 	// GameServiceCreateGameProcedure is the fully-qualified name of the GameService's CreateGame RPC.
 	GameServiceCreateGameProcedure = "/gogame.v1.GameService/CreateGame"
+	// GameServiceFindVacantGamesProcedure is the fully-qualified name of the GameService's
+	// FindVacantGames RPC.
+	GameServiceFindVacantGamesProcedure = "/gogame.v1.GameService/FindVacantGames"
 	// GameServiceJoinGameProcedure is the fully-qualified name of the GameService's JoinGame RPC.
 	GameServiceJoinGameProcedure = "/gogame.v1.GameService/JoinGame"
 )
@@ -42,6 +45,7 @@ const (
 // GameServiceClient is a client for the gogame.v1.GameService service.
 type GameServiceClient interface {
 	CreateGame(context.Context, *connect.Request[v1.CreateGameRequest]) (*connect.Response[v1.CreateGameResponse], error)
+	FindVacantGames(context.Context, *connect.Request[v1.FindVacantGamesRequest]) (*connect.ServerStreamForClient[v1.FindVacantGamesResponse], error)
 	JoinGame(context.Context, *connect.Request[v1.JoinGameRequest]) (*connect.Response[v1.JoinGameResponse], error)
 }
 
@@ -60,6 +64,11 @@ func NewGameServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			baseURL+GameServiceCreateGameProcedure,
 			opts...,
 		),
+		findVacantGames: connect.NewClient[v1.FindVacantGamesRequest, v1.FindVacantGamesResponse](
+			httpClient,
+			baseURL+GameServiceFindVacantGamesProcedure,
+			opts...,
+		),
 		joinGame: connect.NewClient[v1.JoinGameRequest, v1.JoinGameResponse](
 			httpClient,
 			baseURL+GameServiceJoinGameProcedure,
@@ -70,13 +79,19 @@ func NewGameServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 
 // gameServiceClient implements GameServiceClient.
 type gameServiceClient struct {
-	createGame *connect.Client[v1.CreateGameRequest, v1.CreateGameResponse]
-	joinGame   *connect.Client[v1.JoinGameRequest, v1.JoinGameResponse]
+	createGame      *connect.Client[v1.CreateGameRequest, v1.CreateGameResponse]
+	findVacantGames *connect.Client[v1.FindVacantGamesRequest, v1.FindVacantGamesResponse]
+	joinGame        *connect.Client[v1.JoinGameRequest, v1.JoinGameResponse]
 }
 
 // CreateGame calls gogame.v1.GameService.CreateGame.
 func (c *gameServiceClient) CreateGame(ctx context.Context, req *connect.Request[v1.CreateGameRequest]) (*connect.Response[v1.CreateGameResponse], error) {
 	return c.createGame.CallUnary(ctx, req)
+}
+
+// FindVacantGames calls gogame.v1.GameService.FindVacantGames.
+func (c *gameServiceClient) FindVacantGames(ctx context.Context, req *connect.Request[v1.FindVacantGamesRequest]) (*connect.ServerStreamForClient[v1.FindVacantGamesResponse], error) {
+	return c.findVacantGames.CallServerStream(ctx, req)
 }
 
 // JoinGame calls gogame.v1.GameService.JoinGame.
@@ -87,6 +102,7 @@ func (c *gameServiceClient) JoinGame(ctx context.Context, req *connect.Request[v
 // GameServiceHandler is an implementation of the gogame.v1.GameService service.
 type GameServiceHandler interface {
 	CreateGame(context.Context, *connect.Request[v1.CreateGameRequest]) (*connect.Response[v1.CreateGameResponse], error)
+	FindVacantGames(context.Context, *connect.Request[v1.FindVacantGamesRequest], *connect.ServerStream[v1.FindVacantGamesResponse]) error
 	JoinGame(context.Context, *connect.Request[v1.JoinGameRequest]) (*connect.Response[v1.JoinGameResponse], error)
 }
 
@@ -101,6 +117,11 @@ func NewGameServiceHandler(svc GameServiceHandler, opts ...connect.HandlerOption
 		svc.CreateGame,
 		opts...,
 	)
+	gameServiceFindVacantGamesHandler := connect.NewServerStreamHandler(
+		GameServiceFindVacantGamesProcedure,
+		svc.FindVacantGames,
+		opts...,
+	)
 	gameServiceJoinGameHandler := connect.NewUnaryHandler(
 		GameServiceJoinGameProcedure,
 		svc.JoinGame,
@@ -110,6 +131,8 @@ func NewGameServiceHandler(svc GameServiceHandler, opts ...connect.HandlerOption
 		switch r.URL.Path {
 		case GameServiceCreateGameProcedure:
 			gameServiceCreateGameHandler.ServeHTTP(w, r)
+		case GameServiceFindVacantGamesProcedure:
+			gameServiceFindVacantGamesHandler.ServeHTTP(w, r)
 		case GameServiceJoinGameProcedure:
 			gameServiceJoinGameHandler.ServeHTTP(w, r)
 		default:
@@ -123,6 +146,10 @@ type UnimplementedGameServiceHandler struct{}
 
 func (UnimplementedGameServiceHandler) CreateGame(context.Context, *connect.Request[v1.CreateGameRequest]) (*connect.Response[v1.CreateGameResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gogame.v1.GameService.CreateGame is not implemented"))
+}
+
+func (UnimplementedGameServiceHandler) FindVacantGames(context.Context, *connect.Request[v1.FindVacantGamesRequest], *connect.ServerStream[v1.FindVacantGamesResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("gogame.v1.GameService.FindVacantGames is not implemented"))
 }
 
 func (UnimplementedGameServiceHandler) JoinGame(context.Context, *connect.Request[v1.JoinGameRequest]) (*connect.Response[v1.JoinGameResponse], error) {

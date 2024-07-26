@@ -38,7 +38,17 @@ message JoinGameResponse {
   Game game = 1;
 }
 
+message FindVacantGamesRequest {
+
+}
+
+message FindVacantGamesResponse {
+  Game game = 1;
+  bool joinable = 2;
+}
+
 service GameService {
   rpc CreateGame(CreateGameRequest) returns (CreateGameResponse) {}
+  rpc FindVacantGames(FindVacantGamesRequest) returns(stream FindVacantGamesResponse) {}
   rpc JoinGame(JoinGameRequest) returns (JoinGameResponse) {}
 }

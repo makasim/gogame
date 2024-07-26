@@ -45,6 +45,11 @@ func (h *Handler) CreateGame(_ context.Context, req *connect.Request[v1.CreateGa
 	stateCtx := &flowstate.StateCtx{
 		Current: flowstate.State{
 			ID: flowstate.StateID(g.Id),
+			Labels: map[string]string{
+				`game`:       `true`,
+				`game.id`:    g.Id,
+				`game.state`: `created`,
+			},
 		},
 	}
 

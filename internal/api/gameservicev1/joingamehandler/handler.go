@@ -9,6 +9,7 @@ import (
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
 	"github.com/makasim/gogame/internal/createdflow"
+	"github.com/makasim/gogame/internal/moveflow"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
 )
 
@@ -30,25 +31,15 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("player2 name is required"))
 	}
 
-	stateCtx := &flowstate.StateCtx{}
-	d := &flowstate.Data{}
-
-	if err := h.e.Do(
-		flowstate.GetByID(stateCtx, flowstate.StateID(req.Msg.GameId), 0),
-		flowstate.DereferenceData(stateCtx, d, `game`),
-		flowstate.GetData(d),
-	); err != nil {
+	g, stateCtx, d, err := convertor.FindGame(h.e, req.Msg.GameId)
+	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	if stateCtx.Current.Transition.ToID != createdflow.ID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game is not joinable"))
 	}
-
-	g, err := convertor.DataToGame(d)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
+	stateCtx.Current.SetLabel(`game.state`, `started`)
 
 	g.Player2 = req.Msg.Player2
 	if time.Now().UnixNano()%2 == 0 {
@@ -66,7 +57,7 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 	if err := h.e.Do(flowstate.Commit(
 		flowstate.StoreData(d),
 		flowstate.ReferenceData(stateCtx, d, `game`),
-		flowstate.Pause(stateCtx).WithTransit(createdflow.ID),
+		flowstate.Pause(stateCtx).WithTransit(moveflow.ID),
 	)); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

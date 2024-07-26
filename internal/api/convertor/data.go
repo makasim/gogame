@@ -25,3 +25,23 @@ func DataToGame(d *flowstate.Data) (*v1.Game, error) {
 
 	return g, nil
 }
+
+func FindGame(e *flowstate.Engine, gID string) (*v1.Game, *flowstate.StateCtx, *flowstate.Data, error) {
+	d := &flowstate.Data{}
+	stateCtx := &flowstate.StateCtx{}
+
+	if err := e.Do(
+		flowstate.GetByID(stateCtx, flowstate.StateID(gID), 0),
+		flowstate.DereferenceData(stateCtx, d, `game`),
+		flowstate.GetData(d),
+	); err != nil {
+		return nil, nil, nil, err
+	}
+
+	g, err := DataToGame(d)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return g, stateCtx, d, nil
+}
