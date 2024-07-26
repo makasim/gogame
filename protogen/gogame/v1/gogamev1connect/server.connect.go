@@ -35,18 +35,28 @@ const (
 const (
 	// GameServiceCreateGameProcedure is the fully-qualified name of the GameService's CreateGame RPC.
 	GameServiceCreateGameProcedure = "/gogame.v1.GameService/CreateGame"
-	// GameServiceFindVacantGamesProcedure is the fully-qualified name of the GameService's
-	// FindVacantGames RPC.
-	GameServiceFindVacantGamesProcedure = "/gogame.v1.GameService/FindVacantGames"
+	// GameServiceStreamVacantGamesProcedure is the fully-qualified name of the GameService's
+	// StreamVacantGames RPC.
+	GameServiceStreamVacantGamesProcedure = "/gogame.v1.GameService/StreamVacantGames"
 	// GameServiceJoinGameProcedure is the fully-qualified name of the GameService's JoinGame RPC.
 	GameServiceJoinGameProcedure = "/gogame.v1.GameService/JoinGame"
+	// GameServiceStreamGameEventsProcedure is the fully-qualified name of the GameService's
+	// StreamGameEvents RPC.
+	GameServiceStreamGameEventsProcedure = "/gogame.v1.GameService/StreamGameEvents"
+	// GameServiceMakeMoveProcedure is the fully-qualified name of the GameService's MakeMove RPC.
+	GameServiceMakeMoveProcedure = "/gogame.v1.GameService/MakeMove"
+	// GameServiceResignProcedure is the fully-qualified name of the GameService's Resign RPC.
+	GameServiceResignProcedure = "/gogame.v1.GameService/Resign"
 )
 
 // GameServiceClient is a client for the gogame.v1.GameService service.
 type GameServiceClient interface {
 	CreateGame(context.Context, *connect.Request[v1.CreateGameRequest]) (*connect.Response[v1.CreateGameResponse], error)
-	FindVacantGames(context.Context, *connect.Request[v1.FindVacantGamesRequest]) (*connect.ServerStreamForClient[v1.FindVacantGamesResponse], error)
+	StreamVacantGames(context.Context, *connect.Request[v1.StreamVacantGamesRequest]) (*connect.ServerStreamForClient[v1.StreamVacantGamesResponse], error)
 	JoinGame(context.Context, *connect.Request[v1.JoinGameRequest]) (*connect.Response[v1.JoinGameResponse], error)
+	StreamGameEvents(context.Context, *connect.Request[v1.StreamGameEventsRequest]) (*connect.ServerStreamForClient[v1.StreamGameEventsResponse], error)
+	MakeMove(context.Context, *connect.Request[v1.MakeMoveRequest]) (*connect.Response[v1.MakeMoveResponse], error)
+	Resign(context.Context, *connect.Request[v1.ResignRequest]) (*connect.Response[v1.ResignResponse], error)
 }
 
 // NewGameServiceClient constructs a client for the gogame.v1.GameService service. By default, it
@@ -64,9 +74,9 @@ func NewGameServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			baseURL+GameServiceCreateGameProcedure,
 			opts...,
 		),
-		findVacantGames: connect.NewClient[v1.FindVacantGamesRequest, v1.FindVacantGamesResponse](
+		streamVacantGames: connect.NewClient[v1.StreamVacantGamesRequest, v1.StreamVacantGamesResponse](
 			httpClient,
-			baseURL+GameServiceFindVacantGamesProcedure,
+			baseURL+GameServiceStreamVacantGamesProcedure,
 			opts...,
 		),
 		joinGame: connect.NewClient[v1.JoinGameRequest, v1.JoinGameResponse](
@@ -74,14 +84,32 @@ func NewGameServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			baseURL+GameServiceJoinGameProcedure,
 			opts...,
 		),
+		streamGameEvents: connect.NewClient[v1.StreamGameEventsRequest, v1.StreamGameEventsResponse](
+			httpClient,
+			baseURL+GameServiceStreamGameEventsProcedure,
+			opts...,
+		),
+		makeMove: connect.NewClient[v1.MakeMoveRequest, v1.MakeMoveResponse](
+			httpClient,
+			baseURL+GameServiceMakeMoveProcedure,
+			opts...,
+		),
+		resign: connect.NewClient[v1.ResignRequest, v1.ResignResponse](
+			httpClient,
+			baseURL+GameServiceResignProcedure,
+			opts...,
+		),
 	}
 }
 
 // gameServiceClient implements GameServiceClient.
 type gameServiceClient struct {
-	createGame      *connect.Client[v1.CreateGameRequest, v1.CreateGameResponse]
-	findVacantGames *connect.Client[v1.FindVacantGamesRequest, v1.FindVacantGamesResponse]
-	joinGame        *connect.Client[v1.JoinGameRequest, v1.JoinGameResponse]
+	createGame        *connect.Client[v1.CreateGameRequest, v1.CreateGameResponse]
+	streamVacantGames *connect.Client[v1.StreamVacantGamesRequest, v1.StreamVacantGamesResponse]
+	joinGame          *connect.Client[v1.JoinGameRequest, v1.JoinGameResponse]
+	streamGameEvents  *connect.Client[v1.StreamGameEventsRequest, v1.StreamGameEventsResponse]
+	makeMove          *connect.Client[v1.MakeMoveRequest, v1.MakeMoveResponse]
+	resign            *connect.Client[v1.ResignRequest, v1.ResignResponse]
 }
 
 // CreateGame calls gogame.v1.GameService.CreateGame.
@@ -89,9 +117,9 @@ func (c *gameServiceClient) CreateGame(ctx context.Context, req *connect.Request
 	return c.createGame.CallUnary(ctx, req)
 }
 
-// FindVacantGames calls gogame.v1.GameService.FindVacantGames.
-func (c *gameServiceClient) FindVacantGames(ctx context.Context, req *connect.Request[v1.FindVacantGamesRequest]) (*connect.ServerStreamForClient[v1.FindVacantGamesResponse], error) {
-	return c.findVacantGames.CallServerStream(ctx, req)
+// StreamVacantGames calls gogame.v1.GameService.StreamVacantGames.
+func (c *gameServiceClient) StreamVacantGames(ctx context.Context, req *connect.Request[v1.StreamVacantGamesRequest]) (*connect.ServerStreamForClient[v1.StreamVacantGamesResponse], error) {
+	return c.streamVacantGames.CallServerStream(ctx, req)
 }
 
 // JoinGame calls gogame.v1.GameService.JoinGame.
@@ -99,11 +127,29 @@ func (c *gameServiceClient) JoinGame(ctx context.Context, req *connect.Request[v
 	return c.joinGame.CallUnary(ctx, req)
 }
 
+// StreamGameEvents calls gogame.v1.GameService.StreamGameEvents.
+func (c *gameServiceClient) StreamGameEvents(ctx context.Context, req *connect.Request[v1.StreamGameEventsRequest]) (*connect.ServerStreamForClient[v1.StreamGameEventsResponse], error) {
+	return c.streamGameEvents.CallServerStream(ctx, req)
+}
+
+// MakeMove calls gogame.v1.GameService.MakeMove.
+func (c *gameServiceClient) MakeMove(ctx context.Context, req *connect.Request[v1.MakeMoveRequest]) (*connect.Response[v1.MakeMoveResponse], error) {
+	return c.makeMove.CallUnary(ctx, req)
+}
+
+// Resign calls gogame.v1.GameService.Resign.
+func (c *gameServiceClient) Resign(ctx context.Context, req *connect.Request[v1.ResignRequest]) (*connect.Response[v1.ResignResponse], error) {
+	return c.resign.CallUnary(ctx, req)
+}
+
 // GameServiceHandler is an implementation of the gogame.v1.GameService service.
 type GameServiceHandler interface {
 	CreateGame(context.Context, *connect.Request[v1.CreateGameRequest]) (*connect.Response[v1.CreateGameResponse], error)
-	FindVacantGames(context.Context, *connect.Request[v1.FindVacantGamesRequest], *connect.ServerStream[v1.FindVacantGamesResponse]) error
+	StreamVacantGames(context.Context, *connect.Request[v1.StreamVacantGamesRequest], *connect.ServerStream[v1.StreamVacantGamesResponse]) error
 	JoinGame(context.Context, *connect.Request[v1.JoinGameRequest]) (*connect.Response[v1.JoinGameResponse], error)
+	StreamGameEvents(context.Context, *connect.Request[v1.StreamGameEventsRequest], *connect.ServerStream[v1.StreamGameEventsResponse]) error
+	MakeMove(context.Context, *connect.Request[v1.MakeMoveRequest]) (*connect.Response[v1.MakeMoveResponse], error)
+	Resign(context.Context, *connect.Request[v1.ResignRequest]) (*connect.Response[v1.ResignResponse], error)
 }
 
 // NewGameServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -117,9 +163,9 @@ func NewGameServiceHandler(svc GameServiceHandler, opts ...connect.HandlerOption
 		svc.CreateGame,
 		opts...,
 	)
-	gameServiceFindVacantGamesHandler := connect.NewServerStreamHandler(
-		GameServiceFindVacantGamesProcedure,
-		svc.FindVacantGames,
+	gameServiceStreamVacantGamesHandler := connect.NewServerStreamHandler(
+		GameServiceStreamVacantGamesProcedure,
+		svc.StreamVacantGames,
 		opts...,
 	)
 	gameServiceJoinGameHandler := connect.NewUnaryHandler(
@@ -127,14 +173,35 @@ func NewGameServiceHandler(svc GameServiceHandler, opts ...connect.HandlerOption
 		svc.JoinGame,
 		opts...,
 	)
+	gameServiceStreamGameEventsHandler := connect.NewServerStreamHandler(
+		GameServiceStreamGameEventsProcedure,
+		svc.StreamGameEvents,
+		opts...,
+	)
+	gameServiceMakeMoveHandler := connect.NewUnaryHandler(
+		GameServiceMakeMoveProcedure,
+		svc.MakeMove,
+		opts...,
+	)
+	gameServiceResignHandler := connect.NewUnaryHandler(
+		GameServiceResignProcedure,
+		svc.Resign,
+		opts...,
+	)
 	return "/gogame.v1.GameService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case GameServiceCreateGameProcedure:
 			gameServiceCreateGameHandler.ServeHTTP(w, r)
-		case GameServiceFindVacantGamesProcedure:
-			gameServiceFindVacantGamesHandler.ServeHTTP(w, r)
+		case GameServiceStreamVacantGamesProcedure:
+			gameServiceStreamVacantGamesHandler.ServeHTTP(w, r)
 		case GameServiceJoinGameProcedure:
 			gameServiceJoinGameHandler.ServeHTTP(w, r)
+		case GameServiceStreamGameEventsProcedure:
+			gameServiceStreamGameEventsHandler.ServeHTTP(w, r)
+		case GameServiceMakeMoveProcedure:
+			gameServiceMakeMoveHandler.ServeHTTP(w, r)
+		case GameServiceResignProcedure:
+			gameServiceResignHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -148,10 +215,22 @@ func (UnimplementedGameServiceHandler) CreateGame(context.Context, *connect.Requ
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gogame.v1.GameService.CreateGame is not implemented"))
 }
 
-func (UnimplementedGameServiceHandler) FindVacantGames(context.Context, *connect.Request[v1.FindVacantGamesRequest], *connect.ServerStream[v1.FindVacantGamesResponse]) error {
-	return connect.NewError(connect.CodeUnimplemented, errors.New("gogame.v1.GameService.FindVacantGames is not implemented"))
+func (UnimplementedGameServiceHandler) StreamVacantGames(context.Context, *connect.Request[v1.StreamVacantGamesRequest], *connect.ServerStream[v1.StreamVacantGamesResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("gogame.v1.GameService.StreamVacantGames is not implemented"))
 }
 
 func (UnimplementedGameServiceHandler) JoinGame(context.Context, *connect.Request[v1.JoinGameRequest]) (*connect.Response[v1.JoinGameResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gogame.v1.GameService.JoinGame is not implemented"))
+}
+
+func (UnimplementedGameServiceHandler) StreamGameEvents(context.Context, *connect.Request[v1.StreamGameEventsRequest], *connect.ServerStream[v1.StreamGameEventsResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("gogame.v1.GameService.StreamGameEvents is not implemented"))
+}
+
+func (UnimplementedGameServiceHandler) MakeMove(context.Context, *connect.Request[v1.MakeMoveRequest]) (*connect.Response[v1.MakeMoveResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gogame.v1.GameService.MakeMove is not implemented"))
+}
+
+func (UnimplementedGameServiceHandler) Resign(context.Context, *connect.Request[v1.ResignRequest]) (*connect.Response[v1.ResignResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gogame.v1.GameService.Resign is not implemented"))
 }

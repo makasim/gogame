@@ -9,15 +9,27 @@ enum Color {
 }
 
 message Player {
+  string id = 1;
   string name = 2;
-  Color color = 3;
+}
+
+message Move {
+  string player_id = 1;
+  Color color = 2;
+  int64 x = 3;
+  string y = 4;
 }
 
 message Game {
   string id = 1;
-  string name = 2;
-  Player player1 = 3;
-  Player player2 = 4;
+  int64 rev = 2;
+  string name = 3;
+  Player player1 = 4;
+  Player player2 = 5;
+  string state = 6;
+
+  Move current_move = 7;
+  repeated Move previous_moves = 8;
 }
 
 message CreateGameRequest {
@@ -38,17 +50,47 @@ message JoinGameResponse {
   Game game = 1;
 }
 
-message FindVacantGamesRequest {
+message StreamVacantGamesRequest {
 
 }
 
-message FindVacantGamesResponse {
+message StreamVacantGamesResponse {
   Game game = 1;
   bool joinable = 2;
 }
 
+message StreamGameEventsRequest {
+  string game_id = 1;
+}
+
+message StreamGameEventsResponse {
+  Game game = 1;
+}
+
+message MakeMoveRequest {
+  string game_id = 1;
+  int64 game_rev = 2;
+  Move move = 3;
+}
+
+message MakeMoveResponse {
+  Game game = 1;
+}
+
+message ResignRequest {
+  string game_id = 1;
+  string player_id = 3;
+}
+
+message ResignResponse {
+  Game game = 1;
+}
+
 service GameService {
   rpc CreateGame(CreateGameRequest) returns (CreateGameResponse) {}
-  rpc FindVacantGames(FindVacantGamesRequest) returns(stream FindVacantGamesResponse) {}
+  rpc StreamVacantGames(StreamVacantGamesRequest) returns(stream StreamVacantGamesResponse) {}
   rpc JoinGame(JoinGameRequest) returns (JoinGameResponse) {}
+  rpc StreamGameEvents(StreamGameEventsRequest) returns(stream StreamGameEventsResponse) {}
+  rpc MakeMove(MakeMoveRequest) returns (MakeMoveResponse) {}
+  rpc Resign(ResignRequest) returns (ResignResponse) {}
 }

@@ -1,8 +1,7 @@
-package findvacantgameshandler
+package streamgameeventshandler
 
 import (
 	"context"
-	"time"
 
 	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
@@ -20,12 +19,15 @@ func New(e *flowstate.Engine) *Handler {
 	}
 }
 
-func (h *Handler) FindVacantGames(ctx context.Context, _ *connect.Request[v1.FindVacantGamesRequest], stream *connect.ServerStream[v1.FindVacantGamesResponse]) error {
+func (h *Handler) StreamGameEvents(ctx context.Context, req *connect.Request[v1.StreamGameEventsRequest], stream *connect.ServerStream[v1.StreamGameEventsResponse]) error {
+	_, _, _, err := convertor.FindGame(h.e, req.Msg.GameId, 0)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, err)
+	}
+
 	wCmd := flowstate.Watch(map[string]string{
-		`game.state`: `created`,
-	}).WithORLabels(map[string]string{
-		`game.state`: `started`,
-	}).WithSinceTime(time.Now().Add(-time.Minute * 5))
+		`game.id`: req.Msg.GameId,
+	}).WithSinceLatest()
 
 	if err := h.e.Do(wCmd); err != nil {
 		return connect.NewError(connect.CodeInternal, err)
@@ -37,14 +39,13 @@ func (h *Handler) FindVacantGames(ctx context.Context, _ *connect.Request[v1.Fin
 	for {
 		select {
 		case state := <-lis.Listen():
-			g, _, _, err := convertor.FindGame(h.e, state.Labels[`game.id`])
+			g, _, _, err := convertor.FindGame(h.e, state.Labels[`game.id`], state.Rev)
 			if err != nil {
 				return connect.NewError(connect.CodeInternal, err)
 			}
 
-			if err := stream.Send(&v1.FindVacantGamesResponse{
-				Game:     g,
-				Joinable: state.Labels[`game.state`] == `created`,
+			if err := stream.Send(&v1.StreamGameEventsResponse{
+				Game: g,
 			}); err != nil {
 				return connect.NewError(connect.CodeInternal, err)
 			}

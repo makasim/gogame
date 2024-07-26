@@ -3,6 +3,7 @@ package joingamehandler
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"connectrpc.com/connect"
@@ -31,7 +32,7 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("player2 name is required"))
 	}
 
-	g, stateCtx, d, err := convertor.FindGame(h.e, req.Msg.GameId)
+	g, stateCtx, d, err := convertor.FindGame(h.e, req.Msg.GameId, 0)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -39,16 +40,15 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 	if stateCtx.Current.Transition.ToID != createdflow.ID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game is not joinable"))
 	}
+	if g.Player1.Id == req.Msg.Player2.Id {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("player1 and player2 are the same"))
+	}
+
 	stateCtx.Current.SetLabel(`game.state`, `started`)
 
 	g.Player2 = req.Msg.Player2
-	if time.Now().UnixNano()%2 == 0 {
-		g.Player1.Color = v1.Color_COLOR_BLACK
-		g.Player2.Color = v1.Color_COLOR_WHITE
-	} else {
-		g.Player1.Color = v1.Color_COLOR_WHITE
-		g.Player2.Color = v1.Color_COLOR_BLACK
-	}
+	g.State = `started`
+	chooseFirstMove(g)
 
 	if err = convertor.GameToData(g, d); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -62,7 +62,23 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
+	g.Rev = stateCtx.Current.Rev
+
 	return connect.NewResponse(&v1.JoinGameResponse{
 		Game: g,
 	}), nil
+}
+
+func chooseFirstMove(g *v1.Game) {
+	rand.Seed(time.Now().UnixNano())
+	players := []*v1.Player{g.Player1, g.Player2}
+
+	i := rand.Intn(len(players))
+
+	firstPlayer := players[i]
+
+	g.CurrentMove = &v1.Move{
+		PlayerId: firstPlayer.Id,
+		Color:    v1.Color_COLOR_BLACK,
+	}
 }

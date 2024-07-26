@@ -12,9 +12,13 @@ import (
 	"github.com/makasim/flowstate/memdriver"
 	"github.com/makasim/gogame/internal/api/gameservicev1"
 	"github.com/makasim/gogame/internal/api/gameservicev1/creategamehandler"
-	"github.com/makasim/gogame/internal/api/gameservicev1/findvacantgameshandler"
 	"github.com/makasim/gogame/internal/api/gameservicev1/joingamehandler"
+	"github.com/makasim/gogame/internal/api/gameservicev1/makemovehandler"
+	"github.com/makasim/gogame/internal/api/gameservicev1/resignhandler"
+	"github.com/makasim/gogame/internal/api/gameservicev1/streamgameeventshandler"
+	"github.com/makasim/gogame/internal/api/gameservicev1/streamvacantgameshandler"
 	"github.com/makasim/gogame/internal/createdflow"
+	"github.com/makasim/gogame/internal/endedflow"
 	"github.com/makasim/gogame/internal/moveflow"
 	"github.com/makasim/gogame/protogen/gogame/v1/gogamev1connect"
 	"golang.org/x/net/http2"
@@ -40,6 +44,7 @@ func (a *App) Run(ctx context.Context) error {
 	d := memdriver.New()
 	d.SetFlow(createdflow.New())
 	d.SetFlow(moveflow.New())
+	d.SetFlow(endedflow.New())
 
 	e, err := flowstate.NewEngine(d)
 	if err != nil {
@@ -50,7 +55,10 @@ func (a *App) Run(ctx context.Context) error {
 	mux.Handle(gogamev1connect.NewGameServiceHandler(gameservicev1.New(
 		creategamehandler.New(e),
 		joingamehandler.New(e),
-		findvacantgameshandler.New(e),
+		streamvacantgameshandler.New(e),
+		streamgameeventshandler.New(e),
+		makemovehandler.New(e),
+		resignhandler.New(e),
 	)))
 
 	srv := &http.Server{

@@ -18,21 +18,46 @@ type joinGameHandler interface {
 	JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRequest]) (*connect.Response[v1.JoinGameResponse], error)
 }
 
-type findVacantGamesHandler interface {
-	FindVacantGames(ctx context.Context, req *connect.Request[v1.FindVacantGamesRequest], stream *connect.ServerStream[v1.FindVacantGamesResponse]) error
+type streamVacantGamesHandler interface {
+	StreamVacantGames(ctx context.Context, req *connect.Request[v1.StreamVacantGamesRequest], stream *connect.ServerStream[v1.StreamVacantGamesResponse]) error
+}
+
+type streamGameEventsHandler interface {
+	StreamGameEvents(context.Context, *connect.Request[v1.StreamGameEventsRequest], *connect.ServerStream[v1.StreamGameEventsResponse]) error
+}
+
+type makeMoveHandler interface {
+	MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRequest]) (*connect.Response[v1.MakeMoveResponse], error)
+}
+
+type resignHandler interface {
+	Resign(context.Context, *connect.Request[v1.ResignRequest]) (*connect.Response[v1.ResignResponse], error)
 }
 
 type Service struct {
 	cgh  createGameHandler
 	jgh  joinGameHandler
-	fvgh findVacantGamesHandler
+	svgh streamVacantGamesHandler
+	sgeh streamGameEventsHandler
+	mmh  makeMoveHandler
+	rh   resignHandler
 }
 
-func New(cgh createGameHandler, jgh joinGameHandler, fvgh findVacantGamesHandler) *Service {
+func New(
+	cgh createGameHandler,
+	jgh joinGameHandler,
+	svgh streamVacantGamesHandler,
+	sgeh streamGameEventsHandler,
+	mmh makeMoveHandler,
+	rh resignHandler,
+) *Service {
 	return &Service{
 		cgh:  cgh,
 		jgh:  jgh,
-		fvgh: fvgh,
+		svgh: svgh,
+		sgeh: sgeh,
+		mmh:  mmh,
+		rh:   rh,
 	}
 }
 
@@ -44,6 +69,18 @@ func (s *Service) JoinGame(ctx context.Context, req *connect.Request[v1.JoinGame
 	return s.jgh.JoinGame(ctx, req)
 }
 
-func (s *Service) FindVacantGames(ctx context.Context, req *connect.Request[v1.FindVacantGamesRequest], stream *connect.ServerStream[v1.FindVacantGamesResponse]) error {
-	return s.fvgh.FindVacantGames(ctx, req, stream)
+func (s *Service) StreamVacantGames(ctx context.Context, req *connect.Request[v1.StreamVacantGamesRequest], stream *connect.ServerStream[v1.StreamVacantGamesResponse]) error {
+	return s.svgh.StreamVacantGames(ctx, req, stream)
+}
+
+func (s *Service) StreamGameEvents(ctx context.Context, req *connect.Request[v1.StreamGameEventsRequest], stream *connect.ServerStream[v1.StreamGameEventsResponse]) error {
+	return s.sgeh.StreamGameEvents(ctx, req, stream)
+}
+
+func (s *Service) MakeMove(ctx context.Context, req *connect.Request[v1.MakeMoveRequest]) (*connect.Response[v1.MakeMoveResponse], error) {
+	return s.mmh.MakeMove(ctx, req)
+}
+
+func (s *Service) Resign(ctx context.Context, req *connect.Request[v1.ResignRequest]) (*connect.Response[v1.ResignResponse], error) {
+	return s.rh.Resign(ctx, req)
 }
