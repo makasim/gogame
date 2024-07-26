@@ -3,6 +3,7 @@ package makemovehandler
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
@@ -75,6 +76,7 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 		flowstate.StoreData(d),
 		flowstate.ReferenceData(stateCtx, d, `game`),
 		flowstate.Pause(stateCtx).WithTransit(moveflow.ID),
+		flowstate.Delay(stateCtx, time.Second*30).WithCommit(true),
 	)); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
