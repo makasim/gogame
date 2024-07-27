@@ -141,6 +141,8 @@ export class Move extends Message<Move> {
  */
 export class Game extends Message<Game> {
   /**
+   * created
+   *
    * @generated from field: string id = 1;
    */
   id = "";
@@ -171,6 +173,8 @@ export class Game extends Message<Game> {
   state = "";
 
   /**
+   * started
+   *
    * @generated from field: gogame.v1.Move current_move = 7;
    */
   currentMove?: Move;
@@ -181,6 +185,13 @@ export class Game extends Message<Game> {
   previousMoves: Move[] = [];
 
   /**
+   * @generated from field: gogame.v1.Board board = 11;
+   */
+  board?: Board;
+
+  /**
+   * ended
+   *
    * @generated from field: gogame.v1.Player winner = 9;
    */
   winner?: Player;
@@ -189,11 +200,6 @@ export class Game extends Message<Game> {
    * @generated from field: string won_by = 10;
    */
   wonBy = "";
-
-  /**
-   * @generated from field: gogame.v1.Board board = 11;
-   */
-  board?: Board;
 
   constructor(data?: PartialMessage<Game>) {
     super();
@@ -211,9 +217,9 @@ export class Game extends Message<Game> {
     { no: 6, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "current_move", kind: "message", T: Move },
     { no: 8, name: "previous_moves", kind: "message", T: Move, repeated: true },
+    { no: 11, name: "board", kind: "message", T: Board },
     { no: 9, name: "winner", kind: "message", T: Player },
     { no: 10, name: "won_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 11, name: "board", kind: "message", T: Board },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Game {
@@ -513,11 +519,6 @@ export class StreamVacantGamesResponse extends Message<StreamVacantGamesResponse
    */
   game?: Game;
 
-  /**
-   * @generated from field: bool joinable = 2;
-   */
-  joinable = false;
-
   constructor(data?: PartialMessage<StreamVacantGamesResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -527,7 +528,6 @@ export class StreamVacantGamesResponse extends Message<StreamVacantGamesResponse
   static readonly typeName = "gogame.v1.StreamVacantGamesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "game", kind: "message", T: Game },
-    { no: 2, name: "joinable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StreamVacantGamesResponse {
@@ -631,9 +631,9 @@ export class MakeMoveRequest extends Message<MakeMoveRequest> {
   gameId = "";
 
   /**
-   * @generated from field: int64 game_rev = 2;
+   * @generated from field: int32 game_rev = 2;
    */
-  gameRev = protoInt64.zero;
+  gameRev = 0;
 
   /**
    * @generated from field: gogame.v1.Move move = 3;
@@ -649,7 +649,7 @@ export class MakeMoveRequest extends Message<MakeMoveRequest> {
   static readonly typeName = "gogame.v1.MakeMoveRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "game_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "game_rev", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 2, name: "game_rev", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 3, name: "move", kind: "message", T: Move },
   ]);
 
