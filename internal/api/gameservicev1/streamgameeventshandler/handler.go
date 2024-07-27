@@ -39,7 +39,7 @@ func (h *Handler) StreamGameEvents(ctx context.Context, req *connect.Request[v1.
 	for {
 		select {
 		case state := <-lis.Listen():
-			g, _, _, err := convertor.FindGame(h.e, state.Labels[`game.id`], state.Rev)
+			g, _, _, err := convertor.FindGame(h.e, state.Labels[`game.id`], int32(state.Rev))
 			if err != nil {
 				return connect.NewError(connect.CodeInternal, err)
 			}

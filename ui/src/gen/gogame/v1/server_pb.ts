@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3, protoInt64 } from "@bufbuild/protobuf";
+import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
  * @generated from enum gogame.v1.Color
@@ -47,9 +47,9 @@ export class Player extends Message<Player> {
   name = "";
 
   /**
-   * @generated from field: int64 captured_stones = 3;
+   * @generated from field: int32 captured_stones = 3;
    */
-  capturedStones = protoInt64.zero;
+  capturedStones = 0;
 
   constructor(data?: PartialMessage<Player>) {
     super();
@@ -61,7 +61,7 @@ export class Player extends Message<Player> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "captured_stones", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 3, name: "captured_stones", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Player {
@@ -96,14 +96,14 @@ export class Move extends Message<Move> {
   color = Color.UNSPECIFIED;
 
   /**
-   * @generated from field: int64 x = 3;
+   * @generated from field: int32 x = 3;
    */
-  x = protoInt64.zero;
+  x = 0;
 
   /**
-   * @generated from field: int64 y = 4;
+   * @generated from field: int32 y = 4;
    */
-  y = protoInt64.zero;
+  y = 0;
 
   constructor(data?: PartialMessage<Move>) {
     super();
@@ -115,8 +115,8 @@ export class Move extends Message<Move> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "player_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "color", kind: "enum", T: proto3.getEnumType(Color) },
-    { no: 3, name: "x", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 4, name: "y", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 3, name: "x", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "y", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Move {
@@ -148,9 +148,9 @@ export class Game extends Message<Game> {
   id = "";
 
   /**
-   * @generated from field: int64 rev = 2;
+   * @generated from field: int32 rev = 2;
    */
-  rev = protoInt64.zero;
+  rev = 0;
 
   /**
    * @generated from field: string name = 3;
@@ -210,7 +210,7 @@ export class Game extends Message<Game> {
   static readonly typeName = "gogame.v1.Game";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "rev", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 2, name: "rev", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "player1", kind: "message", T: Player },
     { no: 5, name: "player2", kind: "message", T: Player },
@@ -281,9 +281,9 @@ export class Row extends Message<Row> {
  */
 export class Board extends Message<Board> {
   /**
-   * @generated from field: int64 size = 1;
+   * @generated from field: int32 size = 1;
    */
-  size = protoInt64.zero;
+  size = 0;
 
   /**
    * @generated from field: repeated gogame.v1.Row rows = 2;
@@ -298,7 +298,7 @@ export class Board extends Message<Board> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "gogame.v1.Board";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "size", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 1, name: "size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "rows", kind: "message", T: Row, repeated: true },
   ]);
 

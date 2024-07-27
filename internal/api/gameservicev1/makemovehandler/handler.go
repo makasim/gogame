@@ -80,7 +80,7 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	convertor.CurrentPlayer(g).CapturedStones += int64(len(l))
+	convertor.CurrentPlayer(g).CapturedStones += int32(len(l))
 	g.State = `move`
 	stateCtx.Current.SetLabel(`game.state`, `move`)
 
@@ -104,7 +104,7 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	g.Rev = stateCtx.Current.Rev
+	g.Rev = int32(stateCtx.Current.Rev)
 
 	return connect.NewResponse(&v1.MakeMoveResponse{
 		Game: g,

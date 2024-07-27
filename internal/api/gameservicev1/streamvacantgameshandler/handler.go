@@ -37,14 +37,13 @@ func (h *Handler) StreamVacantGames(ctx context.Context, _ *connect.Request[v1.S
 	for {
 		select {
 		case state := <-lis.Listen():
-			g, _, _, err := convertor.FindGame(h.e, state.Labels[`game.id`], state.Rev)
+			g, _, _, err := convertor.FindGame(h.e, state.Labels[`game.id`], int32(state.Rev))
 			if err != nil {
 				return connect.NewError(connect.CodeInternal, err)
 			}
 
 			if err := stream.Send(&v1.StreamVacantGamesResponse{
-				Game:     g,
-				Joinable: state.Labels[`game.state`] == `created`,
+				Game: g,
 			}); err != nil {
 				return connect.NewError(connect.CodeInternal, err)
 			}

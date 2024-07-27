@@ -33,7 +33,7 @@ func (f *Flow) Execute(stateCtx *flowstate.StateCtx, e *flowstate.Engine) (flows
 			return nil, err
 		}
 
-		g.Rev = stateCtx.Current.Rev
+		g.Rev = int32(stateCtx.Current.Rev)
 
 		stateCtx.Current.SetLabel(`game.state`, `ended`)
 		g.State = `ended`

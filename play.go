@@ -58,8 +58,10 @@ func playPlayer1() {
 		panic(fmt.Errorf("player1: stream game events: %w", err))
 	}
 
-	x := int64(4)
+	x := int32(4)
 	for sgeStream.Receive() {
+		g = sgeStream.Msg().Game
+
 		if x > 9 {
 			_, err := gsc.Resign(context.Background(), connect.NewRequest(&v1.ResignRequest{
 				GameId:   g.Id,
@@ -74,7 +76,6 @@ func playPlayer1() {
 			return
 		}
 
-		g = sgeStream.Msg().Game
 		switch g.State {
 		case `created`:
 			continue
@@ -132,11 +133,12 @@ func playPlayer2() {
 	}
 
 	var g *v1.Game
+vacantGamesLoop:
 	for svgStream.Receive() {
+		g = svgStream.Msg().Game
+
 		switch g.State {
 		case `created`:
-			g = svgStream.Msg().Game
-
 			jgr, err := gsc.JoinGame(context.Background(), connect.NewRequest(&v1.JoinGameRequest{
 				GameId: g.Id,
 				Player2: &v1.Player{
@@ -153,7 +155,7 @@ func playPlayer2() {
 
 			g = jgr.Msg.Game
 
-			break
+			break vacantGamesLoop
 		case `started`:
 			continue
 		}
@@ -173,9 +175,10 @@ func playPlayer2() {
 		panic(fmt.Errorf("player2: stream game events: %w", err))
 	}
 
-	x := int64(4)
+	x := int32(4)
 	for sgeStream.Receive() {
 		g = sgeStream.Msg().Game
+
 		switch g.State {
 		case `created`:
 			continue

@@ -55,7 +55,7 @@ func (h *Handler) Resign(_ context.Context, req *connect.Request[v1.ResignReques
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	g.Rev = stateCtx.Current.Rev
+	g.Rev = int32(stateCtx.Current.Rev)
 
 	return connect.NewResponse(&v1.ResignResponse{
 		Game: g,

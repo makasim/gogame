@@ -12,20 +12,20 @@ message Player {
   string id = 1;
   string name = 2;
 
-  int64 captured_stones = 3;
+  int32 captured_stones = 3;
 }
 
 message Move {
   string player_id = 1;
   Color color = 2;
-  int64 x = 3;
-  int64 y = 4;
+  int32 x = 3;
+  int32 y = 4;
 }
 
 message Game {
   // created
   string id = 1;
-  int64 rev = 2;
+  int32 rev = 2;
   string name = 3;
   Player player1 = 4;
   Player player2 = 5;
@@ -46,7 +46,7 @@ message Row {
 }
 
 message Board {
-  int64 size = 1;
+  int32 size = 1;
   repeated Row rows = 2;
 }
 
