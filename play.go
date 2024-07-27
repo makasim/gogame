@@ -58,9 +58,9 @@ func playPlayer1() {
 		panic(fmt.Errorf("player1: stream game events: %w", err))
 	}
 
-	x := int64(1)
+	x := int64(4)
 	for sgeStream.Receive() {
-		if x > 5 {
+		if x > 9 {
 			_, err := gsc.Resign(context.Background(), connect.NewRequest(&v1.ResignRequest{
 				GameId:   g.Id,
 				PlayerId: "player1",
@@ -88,7 +88,7 @@ func playPlayer1() {
 
 			m := g.CurrentMove
 			m.X = x
-			m.Y = `A`
+			m.Y = 4
 
 			x++
 
@@ -103,7 +103,7 @@ func playPlayer1() {
 				log.Printf("player1: cannot make move: %s", err)
 				continue
 			}
-			log.Printf("player1: move made: %s%d", m.Y, m.X)
+			log.Printf("player1: move made: %d:%d", m.Y, m.X)
 
 			g = mmr.Msg.Game
 		case `ended`:
@@ -172,7 +172,7 @@ func playPlayer2() {
 		panic(fmt.Errorf("player2: stream game events: %w", err))
 	}
 
-	x := int64(1)
+	x := int64(4)
 	for sgeStream.Receive() {
 		g = sgeStream.Msg().Game
 		switch g.State {
@@ -188,7 +188,7 @@ func playPlayer2() {
 
 			m := g.CurrentMove
 			m.X = x
-			m.Y = `Z`
+			m.Y = 14
 
 			x++
 
@@ -204,7 +204,7 @@ func playPlayer2() {
 				continue
 			}
 			g = mmr.Msg.Game
-			log.Printf("player2: move made: %s%d", m.Y, m.X)
+			log.Printf("player2: move made: %d:%d", m.Y, m.X)
 		case `ended`:
 			if g.Winner.Id == `player2` {
 				log.Printf("player2: won by %s", g.WonBy)

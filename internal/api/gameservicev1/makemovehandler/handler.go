@@ -3,6 +3,7 @@ package makemovehandler
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"connectrpc.com/connect"
@@ -10,6 +11,7 @@ import (
 	"github.com/makasim/gogame/internal/api/convertor"
 	"github.com/makasim/gogame/internal/moveflow"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
+	"github.com/otrego/clamshell/go/board"
 )
 
 type Handler struct {
@@ -38,10 +40,10 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 	if req.Msg.Move.Color <= 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move color is required"))
 	}
-	if req.Msg.Move.X <= 0 {
+	if req.Msg.Move.X < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move x is required"))
 	}
-	if req.Msg.Move.Y == `` {
+	if req.Msg.Move.Y < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move y is required"))
 	}
 
@@ -57,12 +59,31 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("not player's turn"))
 	}
 
-	g.CurrentMove.X = req.Msg.Move.X
-	g.CurrentMove.Y = req.Msg.Move.Y
+	b := board.New(19)
+	for _, m := range g.PreviousMoves {
+		_, err := b.PlaceStone(convertor.ToClamMove(m))
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+	}
+
+	nextMove := &v1.Move{
+		PlayerId: g.CurrentMove.PlayerId,
+		Color:    g.CurrentMove.Color,
+		X:        req.Msg.Move.X,
+		Y:        req.Msg.Move.Y,
+	}
+
+	l, err := b.PlaceStone(convertor.ToClamMove(nextMove))
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	convertor.CurrentPlayer(g).CapturedStones += int64(len(l))
 	g.State = `move`
 	stateCtx.Current.SetLabel(`game.state`, `move`)
 
-	g.PreviousMoves = append(g.PreviousMoves, g.CurrentMove)
+	g.PreviousMoves = append(g.PreviousMoves, nextMove)
 	g.CurrentMove = &v1.Move{
 		PlayerId: convertor.NextPlayer(g).Id,
 		Color:    convertor.NextColor(g),
@@ -80,6 +101,8 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 	)); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
+	log.Println(b.String())
 
 	g.Rev = stateCtx.Current.Rev
 
