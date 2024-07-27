@@ -60,6 +60,7 @@ func (a *App) Run(ctx context.Context) error {
 		makemovehandler.New(e),
 		resignhandler.New(e),
 	)))
+	mux.Handle("/", http.FileServer(http.Dir("ui/public")))
 
 	srv := &http.Server{
 		Addr:    `127.0.0.1:8181`,
