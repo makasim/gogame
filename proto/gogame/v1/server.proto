@@ -11,13 +11,15 @@ enum Color {
 message Player {
   string id = 1;
   string name = 2;
+
+  int64 captured_stones = 3;
 }
 
 message Move {
   string player_id = 1;
   Color color = 2;
   int64 x = 3;
-  string y = 4;
+  int64 y = 4;
 }
 
 message Game {

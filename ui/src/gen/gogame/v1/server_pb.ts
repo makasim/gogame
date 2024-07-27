@@ -46,6 +46,11 @@ export class Player extends Message<Player> {
    */
   name = "";
 
+  /**
+   * @generated from field: int64 captured_stones = 3;
+   */
+  capturedStones = protoInt64.zero;
+
   constructor(data?: PartialMessage<Player>) {
     super();
     proto3.util.initPartial(data, this);
@@ -56,6 +61,7 @@ export class Player extends Message<Player> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "captured_stones", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Player {
@@ -95,9 +101,9 @@ export class Move extends Message<Move> {
   x = protoInt64.zero;
 
   /**
-   * @generated from field: string y = 4;
+   * @generated from field: int64 y = 4;
    */
-  y = "";
+  y = protoInt64.zero;
 
   constructor(data?: PartialMessage<Move>) {
     super();
@@ -110,7 +116,7 @@ export class Move extends Message<Move> {
     { no: 1, name: "player_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "color", kind: "enum", T: proto3.getEnumType(Color) },
     { no: 3, name: "x", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 4, name: "y", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "y", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Move {
