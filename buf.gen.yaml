@@ -12,3 +12,9 @@ plugins:
   - local: protoc-gen-connect-go
     out: protogen
     opt: paths=source_relative
+  - remote: buf.build/connectrpc/es:v1.4.0
+    out: ui/src/gen
+    opt: target=ts
+  - remote: buf.build/bufbuild/es
+    out: ui/src/gen
+    opt: target=ts
