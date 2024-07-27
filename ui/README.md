@@ -7,7 +7,7 @@ You need to have [Node.js LTS](https://nodejs.org/en) to build or run the UI.
 It also uses `pnpm`. To install it globally run:
 
 ```shell
-npm i -G pnpm
+npm i -g pnpm
 ```
 
 > All the next commands should be executed from the `ui` folder.
