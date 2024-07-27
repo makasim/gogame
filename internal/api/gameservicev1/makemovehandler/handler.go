@@ -3,7 +3,6 @@ package makemovehandler
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"connectrpc.com/connect"
@@ -67,6 +66,8 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 		}
 	}
 
+	b.FullBoardState()
+
 	nextMove := &v1.Move{
 		PlayerId: g.CurrentMove.PlayerId,
 		Color:    g.CurrentMove.Color,
@@ -88,6 +89,7 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 		PlayerId: convertor.NextPlayer(g).Id,
 		Color:    convertor.NextColor(g),
 	}
+	g.Board = convertor.FromClamBoard(b)
 
 	if err = convertor.GameToData(g, d); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -101,8 +103,6 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 	)); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-
-	log.Println(b.String())
 
 	g.Rev = stateCtx.Current.Rev
 

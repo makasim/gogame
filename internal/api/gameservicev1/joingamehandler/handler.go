@@ -12,6 +12,7 @@ import (
 	"github.com/makasim/gogame/internal/createdflow"
 	"github.com/makasim/gogame/internal/moveflow"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
+	"github.com/otrego/clamshell/go/board"
 )
 
 type Handler struct {
@@ -49,6 +50,8 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 	g.Player2 = req.Msg.Player2
 	g.State = `started`
 	chooseFirstMove(g)
+
+	g.Board = convertor.FromClamBoard(board.New(19))
 
 	if err = convertor.GameToData(g, d); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
