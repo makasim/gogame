@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/makasim/flowstate"
@@ -52,8 +53,10 @@ func (a *App) Run(ctx context.Context) error {
 		return fmt.Errorf("new engine: %w", err)
 	}
 
+	corsMW := corsmiddleware.New(os.Getenv(`CORS_ENABLED`) == `true`)
+
 	mux := http.NewServeMux()
-	mux.Handle(corsmiddleware.WrapPath(gogamev1connect.NewGameServiceHandler(gameservicev1.New(
+	mux.Handle(corsMW.WrapPath(gogamev1connect.NewGameServiceHandler(gameservicev1.New(
 		creategamehandler.New(e),
 		joingamehandler.New(e),
 		streamvacantgameshandler.New(e),
@@ -61,7 +64,7 @@ func (a *App) Run(ctx context.Context) error {
 		makemovehandler.New(e),
 		resignhandler.New(e),
 	))))
-	mux.Handle("/", corsmiddleware.Wrap(http.FileServer(http.Dir("ui/public"))))
+	mux.Handle("/", corsMW.Wrap(http.FileServer(http.Dir("ui/public"))))
 
 	srv := &http.Server{
 		Addr:    `127.0.0.1:8181`,

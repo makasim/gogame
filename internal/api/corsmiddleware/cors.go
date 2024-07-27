@@ -6,15 +6,25 @@ import (
 	"github.com/rs/cors"
 )
 
-func Wrap(h http.Handler) http.Handler {
+type MW struct {
+	enabled bool
+}
+
+func New(enabled bool) *MW {
+	return &MW{
+		enabled: enabled,
+	}
+}
+
+func (mv *MW) Wrap(h http.Handler) http.Handler {
+	if !mv.enabled {
+		return h
+	}
+
 	c := cors.New(cors.Options{
-		AllowOriginVaryRequestFunc: func(r *http.Request, origin string) (bool, []string) {
-			// We allow all requests to pass through, so it is equivalent to setting allowed_origins: ['*'].
-			// The method is added solely for the purpose of collecting metrics.
-			return true, nil
-		},
+		AllowedOrigins:   []string{`*`},
 		AllowedMethods:   []string{`POST`, `GET`},
-		AllowedHeaders:   []string{},
+		AllowedHeaders:   []string{`*`},
 		AllowCredentials: true,
 		MaxAge:           600,
 	})
@@ -22,6 +32,6 @@ func Wrap(h http.Handler) http.Handler {
 	return c.Handler(h)
 }
 
-func WrapPath(path string, h http.Handler) (string, http.Handler) {
-	return path, Wrap(h)
+func (mv *MW) WrapPath(path string, h http.Handler) (string, http.Handler) {
+	return path, mv.Wrap(h)
 }

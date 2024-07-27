@@ -24,10 +24,13 @@ To build the UI for Go server run:
 pnpm build
 ```
 
-Open the page at http://localhost:8181
-
-In order to watch UI changes in development run:
+Run back and dev front servers:
+```shell
+pnpm dev
+```
 
 ```shell
-pnpm watch
+CORS_ENABLED=true go run main/main.go
 ```
+
+Open the page at http://localhost:5173/, back is at http://localhost:8181
