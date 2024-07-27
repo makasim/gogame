@@ -33,6 +33,44 @@ proto3.util.setEnumType(Color, "gogame.v1.Color", [
 ]);
 
 /**
+ * @generated from enum gogame.v1.State
+ */
+export enum State {
+  /**
+   * @generated from enum value: STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: STATE_CREATED = 1;
+   */
+  CREATED = 1,
+
+  /**
+   * @generated from enum value: STATE_STARTED = 2;
+   */
+  STARTED = 2,
+
+  /**
+   * @generated from enum value: STATE_MOVE = 3;
+   */
+  MOVE = 3,
+
+  /**
+   * @generated from enum value: STATE_ENDED = 4;
+   */
+  ENDED = 4,
+}
+// Retrieve enum metadata with: proto3.getEnumType(State)
+proto3.util.setEnumType(State, "gogame.v1.State", [
+  { no: 0, name: "STATE_UNSPECIFIED" },
+  { no: 1, name: "STATE_CREATED" },
+  { no: 2, name: "STATE_STARTED" },
+  { no: 3, name: "STATE_MOVE" },
+  { no: 4, name: "STATE_ENDED" },
+]);
+
+/**
  * @generated from message gogame.v1.Player
  */
 export class Player extends Message<Player> {
@@ -168,9 +206,9 @@ export class Game extends Message<Game> {
   player2?: Player;
 
   /**
-   * @generated from field: string state = 6;
+   * @generated from field: gogame.v1.State state = 6;
    */
-  state = "";
+  state = State.UNSPECIFIED;
 
   /**
    * started
@@ -214,7 +252,7 @@ export class Game extends Message<Game> {
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "player1", kind: "message", T: Player },
     { no: 5, name: "player2", kind: "message", T: Player },
-    { no: 6, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "state", kind: "enum", T: proto3.getEnumType(State) },
     { no: 7, name: "current_move", kind: "message", T: Move },
     { no: 8, name: "previous_moves", kind: "message", T: Move, repeated: true },
     { no: 11, name: "board", kind: "message", T: Board },

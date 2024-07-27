@@ -8,6 +8,14 @@ enum Color {
   COLOR_WHITE = 2;
 }
 
+enum State {
+  STATE_UNSPECIFIED = 0;
+  STATE_CREATED = 1;
+  STATE_STARTED = 2;
+  STATE_MOVE = 3;
+  STATE_ENDED = 4;
+}
+
 message Player {
   string id = 1;
   string name = 2;
@@ -29,7 +37,7 @@ message Game {
   string name = 3;
   Player player1 = 4;
   Player player2 = 5;
-  string state = 6;
+  State state = 6;
 
   // started
   Move current_move = 7;

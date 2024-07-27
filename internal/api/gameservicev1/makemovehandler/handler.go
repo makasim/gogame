@@ -81,7 +81,7 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 	}
 
 	convertor.CurrentPlayer(g).CapturedStones += int32(len(l))
-	g.State = `move`
+	g.State = v1.State_STATE_MOVE
 	stateCtx.Current.SetLabel(`game.state`, `move`)
 
 	g.PreviousMoves = append(g.PreviousMoves, nextMove)

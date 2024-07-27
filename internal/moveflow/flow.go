@@ -6,6 +6,7 @@ import (
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
 	"github.com/makasim/gogame/internal/endedflow"
+	v1 "github.com/makasim/gogame/protogen/gogame/v1"
 )
 
 var ID flowstate.FlowID = `move`
@@ -36,7 +37,7 @@ func (f *Flow) Execute(stateCtx *flowstate.StateCtx, e *flowstate.Engine) (flows
 		g.Rev = int32(stateCtx.Current.Rev)
 
 		stateCtx.Current.SetLabel(`game.state`, `ended`)
-		g.State = `ended`
+		g.State = v1.State_STATE_ENDED
 		g.Winner = convertor.AnotherPlayer(g, g.CurrentMove.PlayerId)
 		g.WonBy = `timeout`
 

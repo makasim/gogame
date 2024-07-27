@@ -35,7 +35,7 @@ func (h *Handler) CreateGame(_ context.Context, req *connect.Request[v1.CreateGa
 		Id:      strconv.FormatInt(time.Now().UnixNano(), 10),
 		Name:    req.Msg.Name,
 		Player1: req.Msg.Player1,
-		State:   `created`,
+		State:   v1.State_STATE_CREATED,
 	}
 
 	d := &flowstate.Data{}

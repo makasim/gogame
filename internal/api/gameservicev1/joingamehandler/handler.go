@@ -48,7 +48,7 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 	stateCtx.Current.SetLabel(`game.state`, `started`)
 
 	g.Player2 = req.Msg.Player2
-	g.State = `started`
+	g.State = v1.State_STATE_STARTED
 	chooseFirstMove(g)
 
 	g.Board = convertor.FromClamBoard(board.New(19))

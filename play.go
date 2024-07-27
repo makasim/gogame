@@ -77,13 +77,13 @@ func playPlayer1() {
 		}
 
 		switch g.State {
-		case `created`:
+		case v1.State_STATE_CREATED:
 			continue
-		case `started`, `move`:
+		case v1.State_STATE_STARTED, v1.State_STATE_MOVE:
 			if g.CurrentMove.PlayerId != `player1` {
 				continue
 			}
-			if g.State == `started` {
+			if g.State == v1.State_STATE_STARTED {
 				log.Printf("player1: plays black; first move")
 			}
 
@@ -107,7 +107,7 @@ func playPlayer1() {
 			log.Printf("player1: move made: %d:%d", m.Y, m.X)
 
 			g = mmr.Msg.Game
-		case `ended`:
+		case v1.State_STATE_ENDED:
 			if g.Winner.Id == `player1` {
 				log.Printf("player1: won by %s", g.WonBy)
 			} else {
@@ -138,7 +138,7 @@ vacantGamesLoop:
 		g = svgStream.Msg().Game
 
 		switch g.State {
-		case `created`:
+		case v1.State_STATE_CREATED:
 			jgr, err := gsc.JoinGame(context.Background(), connect.NewRequest(&v1.JoinGameRequest{
 				GameId: g.Id,
 				Player2: &v1.Player{
@@ -156,7 +156,7 @@ vacantGamesLoop:
 			g = jgr.Msg.Game
 
 			break vacantGamesLoop
-		case `started`:
+		case v1.State_STATE_STARTED:
 			continue
 		}
 	}
@@ -180,13 +180,13 @@ vacantGamesLoop:
 		g = sgeStream.Msg().Game
 
 		switch g.State {
-		case `created`:
+		case v1.State_STATE_CREATED:
 			continue
-		case `started`, `move`:
+		case v1.State_STATE_STARTED, v1.State_STATE_MOVE:
 			if g.CurrentMove.PlayerId != `player2` {
 				continue
 			}
-			if g.State == `started` {
+			if g.State == v1.State_STATE_STARTED {
 				log.Printf("player1: plays black; first move")
 			}
 
@@ -209,7 +209,7 @@ vacantGamesLoop:
 			}
 			g = mmr.Msg.Game
 			log.Printf("player2: move made: %d:%d", m.Y, m.X)
-		case `ended`:
+		case v1.State_STATE_ENDED:
 			if g.Winner.Id == `player2` {
 				log.Printf("player2: won by %s", g.WonBy)
 			} else {

@@ -39,7 +39,7 @@ func (h *Handler) Resign(_ context.Context, req *connect.Request[v1.ResignReques
 	}
 
 	stateCtx.Current.SetLabel(`game.state`, `ended`)
-	g.State = `ended`
+	g.State = v1.State_STATE_ENDED
 	g.Winner = convertor.AnotherPlayer(g, req.Msg.PlayerId)
 	g.WonBy = `resign`
 
