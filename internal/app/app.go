@@ -10,6 +10,7 @@ import (
 
 	"github.com/makasim/flowstate"
 	"github.com/makasim/flowstate/memdriver"
+	"github.com/makasim/gogame/internal/api/corsmiddleware"
 	"github.com/makasim/gogame/internal/api/gameservicev1"
 	"github.com/makasim/gogame/internal/api/gameservicev1/creategamehandler"
 	"github.com/makasim/gogame/internal/api/gameservicev1/joingamehandler"
@@ -52,15 +53,15 @@ func (a *App) Run(ctx context.Context) error {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle(gogamev1connect.NewGameServiceHandler(gameservicev1.New(
+	mux.Handle(corsmiddleware.WrapPath(gogamev1connect.NewGameServiceHandler(gameservicev1.New(
 		creategamehandler.New(e),
 		joingamehandler.New(e),
 		streamvacantgameshandler.New(e),
 		streamgameeventshandler.New(e),
 		makemovehandler.New(e),
 		resignhandler.New(e),
-	)))
-	mux.Handle("/", http.FileServer(http.Dir("ui/public")))
+	))))
+	mux.Handle("/", corsmiddleware.Wrap(http.FileServer(http.Dir("ui/public"))))
 
 	srv := &http.Server{
 		Addr:    `127.0.0.1:8181`,
