@@ -27,7 +27,7 @@ export function App() {
     if (!currentGame) return;
     localStorage.setItem("currentGame", JSON.stringify(currentGame));
     listenToGame(currentGame.id);
-  }, [currentGame]);
+  }, [currentGame?.id]);
 
   if (!playerId) {
     return <UserForm onSave={setPlayerId} />;
@@ -120,17 +120,8 @@ export function App() {
 
   async function resign() {
     if (!playerId || !currentGame) return;
-
-    const { game } = await client.resign({
-      gameId: currentGame.id,
-      playerId,
-    });
-
-    if (!game) {
-      alert("Game not resigned");
-      return;
-    }
-
+    const { game } = await client.resign({ gameId: currentGame.id, playerId });
+    if (!game) return alert("Game not resigned");
     setCurrentGame(game);
   }
 
