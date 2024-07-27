@@ -1,136 +1,165 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import clsx from "clsx";
+
 import { client } from "./api";
-import { Game } from "./gen/gogame/v1/server_pb";
+import { Color, Game, State } from "./gen/gogame/v1/server_pb";
+import { UserForm } from "./UserForm";
+import { Games } from "./Games";
 
 export function App() {
-  const [turn, setTurn] = useState(1);
-  const [size] = useState(19);
-  const [board, setBoard] = useState<number[]>([]);
-  const [currentGame, setCurrentGame] = useState<Game | null>(null);
-  const [games, setGames] = useState<Game[]>([]);
-  const nameField = useRef<HTMLInputElement>(null);
-
-  function resetBoard() {
-    setBoard(new Array(size * size).fill(0));
-  }
-
-  async function processGames() {
-    for await (const { game, joinable } of client.streamVacantGames({})) {
-      const exist = games.some((g) => g.id === game?.id);
-
-      if (joinable && !exist) {
-        setGames((prev) => [...prev, game!]);
-      }
-
-      if (!joinable && exist) {
-        setGames((prev) => prev.filter((g) => g.id !== game?.id));
-      }
-    }
-  }
-
-  async function createGame() {
-    const playerName = nameField.current?.value;
-
-    if (!playerName) {
-      alert("Name is required");
-      return;
-    }
-
-    const { game } = await client.createGame({
-      name: `Game-${Date.now()}`,
-      player1: { id: playerName, name: playerName },
-    });
-
-    alert(`Game created: ${game?.name}`);
-  }
-
-  async function joinGame(selectedGame: Game) {
-    const playerName = nameField.current?.value;
-
-    if (!playerName) {
-      alert("Name is required");
-      return;
-    }
-
-    if (playerName === selectedGame.player1?.name) {
-      alert("Names must be different");
-      return;
-    }
-
-    const { game } = await client.joinGame({
-      gameId: selectedGame.id,
-      player2: { id: playerName, name: playerName },
-    });
-
-    if (!game) {
-      alert("Game is not joinable");
-      return;
-    }
-
-    alert(`Game joined: ${game?.name}`);
-
-    setCurrentGame(game!);
-    resetBoard();
-  }
+  const [playerId, setPlayerId] = useState(localStorage.getItem("currentUser"));
+  const [availableGames, setAvailableGames] = useState<Game[]>([]);
+  const [currentGame, setCurrentGame] = useState<Game | null>(() => {
+    const game = localStorage.getItem("currentGame");
+    return game ? JSON.parse(game) : null;
+  });
 
   useEffect(() => {
-    processGames();
+    listenToAwailableGames();
   }, []);
 
   useEffect(() => {
+    if (!playerId) return;
+    localStorage.setItem("currentUser", playerId);
+  }, [playerId]);
+
+  useEffect(() => {
     if (!currentGame) return;
-
-    const newBoard = new Array(size * size).fill(0);
-
-    for (const move of currentGame.previousMoves) {
-      const index = +move.y * 19 + Number(move.x);
-      newBoard[index] = move.color;
-    }
-
-    setBoard(newBoard);
+    localStorage.setItem("currentGame", JSON.stringify(currentGame));
+    listenToGame(currentGame.id);
   }, [currentGame]);
 
-  const putStone = (i: number) => {
-    if (board[i] !== 0) return;
+  if (!playerId) {
+    return <UserForm onSave={setPlayerId} />;
+  }
 
-    const newBoard = [...board];
-    newBoard[i] = turn;
+  if (!currentGame) {
+    return (
+      <>
+        <button onClick={createGame}>Create Game</button>
+        <Games games={availableGames} onJoin={joinGame} />
+      </>
+    );
+  }
 
-    setTurn(turn === 1 ? 2 : 1);
-    setBoard(newBoard);
-  };
+  if (currentGame.state === State.CREATED) {
+    return <h2>Waiting for another player</h2>;
+  }
 
+  async function createGame() {
+    if (!playerId) return;
+
+    const { game } = await client.createGame({
+      name: `Game-${Date.now()}`,
+      player1: { id: playerId, name: playerId },
+    });
+
+    if (!game) return alert("Game not created");
+
+    setCurrentGame(game);
+  }
+
+  async function joinGame(gameId: string) {
+    if (!playerId) return;
+
+    const { game } = await client.joinGame({
+      gameId,
+      player2: { id: playerId, name: playerId },
+    });
+
+    if (!game) return alert("Game is not joinable");
+
+    setCurrentGame(game);
+  }
+
+  async function listenToAwailableGames() {
+    for await (const { game } of client.streamVacantGames({})) {
+      if (!game) return alert("No games found");
+
+      setAvailableGames((games) => {
+        const filteredGames = games.filter((g) => g.id !== game.id);
+
+        return game.state === State.CREATED && game.player1?.id !== playerId
+          ? [game, ...filteredGames]
+          : filteredGames;
+      });
+    }
+  }
+
+  async function listenToGame(gameId: string) {
+    for await (const { game } of client.streamGameEvents({ gameId })) {
+      if (!game) return alert("Game not found");
+      setCurrentGame(game);
+    }
+  }
+
+  async function putStone(i: number) {
+    console.log("putStone", i);
+
+    if (!playerId || !currentGame) return;
+    if (currentGame.currentMove?.playerId !== playerId) return;
+
+    const move = {
+      ...currentGame.currentMove,
+      x: i % 19,
+      y: Math.floor(i / 19),
+    };
+
+    console.log("move", move);
+
+    const { game } = await client.makeMove({
+      gameId: currentGame?.id,
+      gameRev: currentGame?.rev,
+      move,
+    });
+
+    if (!game) return alert("Move not made");
+
+    setCurrentGame(game);
+  }
+
+  async function resign() {
+    if (!playerId || !currentGame) return;
+
+    const { game } = await client.resign({
+      gameId: currentGame.id,
+      playerId,
+    });
+
+    if (!game) {
+      alert("Game not resigned");
+      return;
+    }
+
+    setCurrentGame(game);
+  }
+
+  const colors = currentGame.board?.rows.map((row) => row.colors).flat() || [];
+  console.log("colors", colors);
+  
   return (
     <div className="App">
-      Your name: <input ref={nameField} />
-      <br />
-      <button onClick={createGame}>Create Game</button>
-      <ul>
-        {games.map((game) => (
-          <li key={game.id}>
-            {game.name} ({game.player1?.name})
-            <button onClick={() => joinGame(game)}>Join</button>
-          </li>
-        ))}
-      </ul>
+      <button onClick={resign}>Resign</button>
 
-      <h1>Go game</h1>
-
-      {currentGame && (
-        <div className="field">
-          {board.map((stone, i) => (
-            <button
-              onClick={() => putStone(i)}
-              className={clsx("cell", {
-                black: stone === 1,
-                white: stone === 2,
-              })}
-              key={i}
-            ></button>
-          ))}
-        </div>
+      {currentGame.currentMove?.playerId === playerId && (
+        <h2>
+          You turn{" "}
+          {currentGame.currentMove.color === Color.BLACK ? "Black" : "White"}
+        </h2>
       )}
+
+      <div className="field">
+        {colors.map((color, i) => (
+          <button
+            key={i}
+            onClick={() => putStone(i)}
+            className={clsx("cell", {
+              black: color === Color.BLACK,
+              white: color === Color.WHITE,
+            })}
+          ></button>
+        ))}
+      </div>
     </div>
   );
 }
