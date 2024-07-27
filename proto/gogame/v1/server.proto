@@ -23,6 +23,7 @@ message Move {
 }
 
 message Game {
+  // created
   string id = 1;
   int64 rev = 2;
   string name = 3;
@@ -30,13 +31,14 @@ message Game {
   Player player2 = 5;
   string state = 6;
 
+  // started
   Move current_move = 7;
   repeated Move previous_moves = 8;
+  Board board = 11;
 
+  // ended
   Player winner = 9;
   string won_by = 10;
-
-  Board board = 11;
 }
 
 message Row {
@@ -72,7 +74,6 @@ message StreamVacantGamesRequest {
 
 message StreamVacantGamesResponse {
   Game game = 1;
-  bool joinable = 2;
 }
 
 message StreamGameEventsRequest {
@@ -85,7 +86,7 @@ message StreamGameEventsResponse {
 
 message MakeMoveRequest {
   string game_id = 1;
-  int64 game_rev = 2;
+  int32 game_rev = 2;
   Move move = 3;
 }
 

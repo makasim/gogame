@@ -133,29 +133,30 @@ func playPlayer2() {
 
 	var g *v1.Game
 	for svgStream.Receive() {
-		if !svgStream.Msg().Joinable {
+		switch g.State {
+		case `created`:
+			g = svgStream.Msg().Game
+
+			jgr, err := gsc.JoinGame(context.Background(), connect.NewRequest(&v1.JoinGameRequest{
+				GameId: g.Id,
+				Player2: &v1.Player{
+					Id:   `player2`,
+					Name: "Tom Harry",
+				},
+			}))
+			if err != nil && strings.Contains(err.Error(), `game is not joinable`) {
+				continue
+			} else if err != nil {
+				log.Printf("player2: cannot join game: %s: %s", g.Id, err)
+				continue
+			}
+
+			g = jgr.Msg.Game
+
+			break
+		case `started`:
 			continue
 		}
-
-		g = svgStream.Msg().Game
-
-		jgr, err := gsc.JoinGame(context.Background(), connect.NewRequest(&v1.JoinGameRequest{
-			GameId: g.Id,
-			Player2: &v1.Player{
-				Id:   `player2`,
-				Name: "Tom Harry",
-			},
-		}))
-		if err != nil && strings.Contains(err.Error(), `game is not joinable`) {
-			continue
-		} else if err != nil {
-			log.Printf("player2: cannot join game: %s: %s", g.Id, err)
-			continue
-		}
-
-		g = jgr.Msg.Game
-
-		break
 	}
 	svgCtxCancel()
 	//svgStream.Close()
