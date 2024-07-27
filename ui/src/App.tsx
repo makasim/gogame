@@ -26,7 +26,13 @@ export function App() {
   useEffect(() => {
     if (!currentGame) return;
     localStorage.setItem("currentGame", JSON.stringify(currentGame));
-    listenToGame(currentGame.id);
+
+    try {
+      listenToGame(currentGame.id);
+    } catch (error) {
+      console.error("Game not found", error);
+      resetGame();
+    }
   }, [currentGame?.id]);
 
   if (!playerId) {
@@ -44,6 +50,11 @@ export function App() {
 
   if (currentGame.state === State.CREATED) {
     return <h2>Waiting for another player</h2>;
+  }
+
+  function resetGame() {
+    setCurrentGame(null);
+    localStorage.removeItem("currentGame");
   }
 
   async function createGame() {
@@ -94,23 +105,18 @@ export function App() {
   }
 
   async function putStone(i: number) {
-    console.log("putStone", i);
-
     if (!playerId || !currentGame) return;
+    if (currentGame.state === State.ENDED) return;
     if (currentGame.currentMove?.playerId !== playerId) return;
-
-    const move = {
-      ...currentGame.currentMove,
-      x: i % 19,
-      y: Math.floor(i / 19),
-    };
-
-    console.log("move", move);
 
     const { game } = await client.makeMove({
       gameId: currentGame?.id,
       gameRev: currentGame?.rev,
-      move,
+      move: {
+        ...currentGame.currentMove,
+        x: i % 19,
+        y: Math.floor(i / 19),
+      },
     });
 
     if (!game) return alert("Move not made");
@@ -126,16 +132,22 @@ export function App() {
   }
 
   const colors = currentGame.board?.rows.map((row) => row.colors).flat() || [];
-  console.log("colors", colors);
-  
+
   return (
     <div className="App">
-      <button onClick={resign}>Resign</button>
-
-      {currentGame.currentMove?.playerId === playerId && (
+      {currentGame.state === State.ENDED ? (
         <h2>
-          You turn{" "}
-          {currentGame.currentMove.color === Color.BLACK ? "Black" : "White"}
+          Game ended.{" "}
+          {currentGame.winner?.id === playerId ? "You won!" : "You lost!"}
+          {currentGame.wonBy}
+          <button onClick={resetGame}>Reset</button>
+        </h2>
+      ) : (
+        <h2>
+          <button onClick={resign}>Resign</button>
+
+          {currentGame.currentMove?.playerId === playerId &&
+            `You turn ${currentGame.currentMove.color === Color.BLACK ? "Black" : "White"}`}
         </h2>
       )}
 
