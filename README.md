@@ -22,3 +22,5 @@ Start demo client:
 ```bash
 go run play.go
 ```
+
+To build the UI read [its readme](./ui/README.md)

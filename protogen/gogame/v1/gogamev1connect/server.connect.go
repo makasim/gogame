@@ -18,7 +18,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// GameServiceName is the fully-qualified name of the GameService service.
@@ -49,6 +49,17 @@ const (
 	GameServiceResignProcedure = "/gogame.v1.GameService/Resign"
 )
 
+// These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
+var (
+	gameServiceServiceDescriptor                 = v1.File_gogame_v1_server_proto.Services().ByName("GameService")
+	gameServiceCreateGameMethodDescriptor        = gameServiceServiceDescriptor.Methods().ByName("CreateGame")
+	gameServiceStreamVacantGamesMethodDescriptor = gameServiceServiceDescriptor.Methods().ByName("StreamVacantGames")
+	gameServiceJoinGameMethodDescriptor          = gameServiceServiceDescriptor.Methods().ByName("JoinGame")
+	gameServiceStreamGameEventsMethodDescriptor  = gameServiceServiceDescriptor.Methods().ByName("StreamGameEvents")
+	gameServiceMakeMoveMethodDescriptor          = gameServiceServiceDescriptor.Methods().ByName("MakeMove")
+	gameServiceResignMethodDescriptor            = gameServiceServiceDescriptor.Methods().ByName("Resign")
+)
+
 // GameServiceClient is a client for the gogame.v1.GameService service.
 type GameServiceClient interface {
 	CreateGame(context.Context, *connect.Request[v1.CreateGameRequest]) (*connect.Response[v1.CreateGameResponse], error)
@@ -72,32 +83,38 @@ func NewGameServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 		createGame: connect.NewClient[v1.CreateGameRequest, v1.CreateGameResponse](
 			httpClient,
 			baseURL+GameServiceCreateGameProcedure,
-			opts...,
+			connect.WithSchema(gameServiceCreateGameMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		streamVacantGames: connect.NewClient[v1.StreamVacantGamesRequest, v1.StreamVacantGamesResponse](
 			httpClient,
 			baseURL+GameServiceStreamVacantGamesProcedure,
-			opts...,
+			connect.WithSchema(gameServiceStreamVacantGamesMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		joinGame: connect.NewClient[v1.JoinGameRequest, v1.JoinGameResponse](
 			httpClient,
 			baseURL+GameServiceJoinGameProcedure,
-			opts...,
+			connect.WithSchema(gameServiceJoinGameMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		streamGameEvents: connect.NewClient[v1.StreamGameEventsRequest, v1.StreamGameEventsResponse](
 			httpClient,
 			baseURL+GameServiceStreamGameEventsProcedure,
-			opts...,
+			connect.WithSchema(gameServiceStreamGameEventsMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		makeMove: connect.NewClient[v1.MakeMoveRequest, v1.MakeMoveResponse](
 			httpClient,
 			baseURL+GameServiceMakeMoveProcedure,
-			opts...,
+			connect.WithSchema(gameServiceMakeMoveMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 		resign: connect.NewClient[v1.ResignRequest, v1.ResignResponse](
 			httpClient,
 			baseURL+GameServiceResignProcedure,
-			opts...,
+			connect.WithSchema(gameServiceResignMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
@@ -161,32 +178,38 @@ func NewGameServiceHandler(svc GameServiceHandler, opts ...connect.HandlerOption
 	gameServiceCreateGameHandler := connect.NewUnaryHandler(
 		GameServiceCreateGameProcedure,
 		svc.CreateGame,
-		opts...,
+		connect.WithSchema(gameServiceCreateGameMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	gameServiceStreamVacantGamesHandler := connect.NewServerStreamHandler(
 		GameServiceStreamVacantGamesProcedure,
 		svc.StreamVacantGames,
-		opts...,
+		connect.WithSchema(gameServiceStreamVacantGamesMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	gameServiceJoinGameHandler := connect.NewUnaryHandler(
 		GameServiceJoinGameProcedure,
 		svc.JoinGame,
-		opts...,
+		connect.WithSchema(gameServiceJoinGameMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	gameServiceStreamGameEventsHandler := connect.NewServerStreamHandler(
 		GameServiceStreamGameEventsProcedure,
 		svc.StreamGameEvents,
-		opts...,
+		connect.WithSchema(gameServiceStreamGameEventsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	gameServiceMakeMoveHandler := connect.NewUnaryHandler(
 		GameServiceMakeMoveProcedure,
 		svc.MakeMove,
-		opts...,
+		connect.WithSchema(gameServiceMakeMoveMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	gameServiceResignHandler := connect.NewUnaryHandler(
 		GameServiceResignProcedure,
 		svc.Resign,
-		opts...,
+		connect.WithSchema(gameServiceResignMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/gogame.v1.GameService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
