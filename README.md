@@ -24,3 +24,7 @@ go run play.go
 ```
 
 To build the UI read [its readme](./ui/README.md)
+
+## Credits
+
+- [Otrego](https://github.com/otrego) community for building [clamshell](https://github.com/otrego/clamshell) that implement go board rules.  
