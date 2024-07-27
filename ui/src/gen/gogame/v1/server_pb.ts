@@ -190,6 +190,11 @@ export class Game extends Message<Game> {
    */
   wonBy = "";
 
+  /**
+   * @generated from field: gogame.v1.Board board = 11;
+   */
+  board?: Board;
+
   constructor(data?: PartialMessage<Game>) {
     super();
     proto3.util.initPartial(data, this);
@@ -208,6 +213,7 @@ export class Game extends Message<Game> {
     { no: 8, name: "previous_moves", kind: "message", T: Move, repeated: true },
     { no: 9, name: "winner", kind: "message", T: Player },
     { no: 10, name: "won_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "board", kind: "message", T: Board },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Game {
@@ -224,6 +230,86 @@ export class Game extends Message<Game> {
 
   static equals(a: Game | PlainMessage<Game> | undefined, b: Game | PlainMessage<Game> | undefined): boolean {
     return proto3.util.equals(Game, a, b);
+  }
+}
+
+/**
+ * @generated from message gogame.v1.Row
+ */
+export class Row extends Message<Row> {
+  /**
+   * @generated from field: repeated gogame.v1.Color colors = 1;
+   */
+  colors: Color[] = [];
+
+  constructor(data?: PartialMessage<Row>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "gogame.v1.Row";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "colors", kind: "enum", T: proto3.getEnumType(Color), repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Row {
+    return new Row().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Row {
+    return new Row().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Row {
+    return new Row().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Row | PlainMessage<Row> | undefined, b: Row | PlainMessage<Row> | undefined): boolean {
+    return proto3.util.equals(Row, a, b);
+  }
+}
+
+/**
+ * @generated from message gogame.v1.Board
+ */
+export class Board extends Message<Board> {
+  /**
+   * @generated from field: int64 size = 1;
+   */
+  size = protoInt64.zero;
+
+  /**
+   * @generated from field: repeated gogame.v1.Row rows = 2;
+   */
+  rows: Row[] = [];
+
+  constructor(data?: PartialMessage<Board>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "gogame.v1.Board";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "size", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 2, name: "rows", kind: "message", T: Row, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Board {
+    return new Board().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Board {
+    return new Board().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Board {
+    return new Board().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Board | PlainMessage<Board> | undefined, b: Board | PlainMessage<Board> | undefined): boolean {
+    return proto3.util.equals(Board, a, b);
   }
 }
 

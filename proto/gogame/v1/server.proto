@@ -35,6 +35,17 @@ message Game {
 
   Player winner = 9;
   string won_by = 10;
+
+  Board board = 11;
+}
+
+message Row {
+  repeated Color colors = 1;
+}
+
+message Board {
+  int64 size = 1;
+  repeated Row rows = 2;
 }
 
 message CreateGameRequest {
