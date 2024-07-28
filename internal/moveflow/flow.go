@@ -38,7 +38,7 @@ func (f *Flow) Execute(stateCtx *flowstate.StateCtx, e *flowstate.Engine) (flows
 
 		stateCtx.Current.SetLabel(`game.state`, `ended`)
 		g.State = v1.State_STATE_ENDED
-		g.Winner = convertor.AnotherPlayer(g, g.CurrentMove.PlayerId)
+		g.Winner = convertor.NextPlayer(g)
 		g.WonBy = `timeout`
 
 		if err = convertor.GameToData(g, d); err != nil {

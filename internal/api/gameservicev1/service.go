@@ -34,6 +34,10 @@ type resignHandler interface {
 	Resign(context.Context, *connect.Request[v1.ResignRequest]) (*connect.Response[v1.ResignResponse], error)
 }
 
+type passHandler interface {
+	Pass(context.Context, *connect.Request[v1.PassRequest]) (*connect.Response[v1.PassResponse], error)
+}
+
 type Service struct {
 	cgh  createGameHandler
 	jgh  joinGameHandler
@@ -41,6 +45,7 @@ type Service struct {
 	sgeh streamGameEventsHandler
 	mmh  makeMoveHandler
 	rh   resignHandler
+	ph   passHandler
 }
 
 func New(
@@ -50,6 +55,7 @@ func New(
 	sgeh streamGameEventsHandler,
 	mmh makeMoveHandler,
 	rh resignHandler,
+	ph passHandler,
 ) *Service {
 	return &Service{
 		cgh:  cgh,
@@ -58,6 +64,7 @@ func New(
 		sgeh: sgeh,
 		mmh:  mmh,
 		rh:   rh,
+		ph:   ph,
 	}
 }
 
@@ -79,6 +86,10 @@ func (s *Service) StreamGameEvents(ctx context.Context, req *connect.Request[v1.
 
 func (s *Service) MakeMove(ctx context.Context, req *connect.Request[v1.MakeMoveRequest]) (*connect.Response[v1.MakeMoveResponse], error) {
 	return s.mmh.MakeMove(ctx, req)
+}
+
+func (s *Service) Pass(ctx context.Context, req *connect.Request[v1.PassRequest]) (*connect.Response[v1.PassResponse], error) {
+	return s.ph.Pass(ctx, req)
 }
 
 func (s *Service) Resign(ctx context.Context, req *connect.Request[v1.ResignRequest]) (*connect.Response[v1.ResignResponse], error) {
