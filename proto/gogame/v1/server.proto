@@ -24,10 +24,16 @@ message Player {
 }
 
 message Move {
+  // current move
   string player_id = 1;
   Color color = 2;
+
+  // make move
   int32 x = 3;
   int32 y = 4;
+
+  // pass (set by server for history
+  bool pass = 5;
 }
 
 message Game {
@@ -102,6 +108,16 @@ message MakeMoveResponse {
   Game game = 1;
 }
 
+message PassRequest {
+  string game_id = 1;
+  int32 game_rev = 2;
+  string player_id = 3;
+}
+
+message PassResponse {
+  Game game = 1;
+}
+
 message ResignRequest {
   string game_id = 1;
   string player_id = 3;
@@ -118,4 +134,5 @@ service GameService {
   rpc StreamGameEvents(StreamGameEventsRequest) returns(stream StreamGameEventsResponse) {}
   rpc MakeMove(MakeMoveRequest) returns (MakeMoveResponse) {}
   rpc Resign(ResignRequest) returns (ResignResponse) {}
+  rpc Pass(PassRequest) returns (PassResponse) {}
 }

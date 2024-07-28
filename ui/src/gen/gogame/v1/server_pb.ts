@@ -124,6 +124,8 @@ export class Player extends Message<Player> {
  */
 export class Move extends Message<Move> {
   /**
+   * current move
+   *
    * @generated from field: string player_id = 1;
    */
   playerId = "";
@@ -134,6 +136,8 @@ export class Move extends Message<Move> {
   color = Color.UNSPECIFIED;
 
   /**
+   * make move
+   *
    * @generated from field: int32 x = 3;
    */
   x = 0;
@@ -142,6 +146,13 @@ export class Move extends Message<Move> {
    * @generated from field: int32 y = 4;
    */
   y = 0;
+
+  /**
+   * pass (set by server for history
+   *
+   * @generated from field: bool pass = 5;
+   */
+  pass = false;
 
   constructor(data?: PartialMessage<Move>) {
     super();
@@ -155,6 +166,7 @@ export class Move extends Message<Move> {
     { no: 2, name: "color", kind: "enum", T: proto3.getEnumType(Color) },
     { no: 3, name: "x", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 4, name: "y", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "pass", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Move {
@@ -742,6 +754,92 @@ export class MakeMoveResponse extends Message<MakeMoveResponse> {
 
   static equals(a: MakeMoveResponse | PlainMessage<MakeMoveResponse> | undefined, b: MakeMoveResponse | PlainMessage<MakeMoveResponse> | undefined): boolean {
     return proto3.util.equals(MakeMoveResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message gogame.v1.PassRequest
+ */
+export class PassRequest extends Message<PassRequest> {
+  /**
+   * @generated from field: string game_id = 1;
+   */
+  gameId = "";
+
+  /**
+   * @generated from field: int32 game_rev = 2;
+   */
+  gameRev = 0;
+
+  /**
+   * @generated from field: string player_id = 3;
+   */
+  playerId = "";
+
+  constructor(data?: PartialMessage<PassRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "gogame.v1.PassRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "game_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "game_rev", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "player_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PassRequest {
+    return new PassRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PassRequest {
+    return new PassRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PassRequest {
+    return new PassRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PassRequest | PlainMessage<PassRequest> | undefined, b: PassRequest | PlainMessage<PassRequest> | undefined): boolean {
+    return proto3.util.equals(PassRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message gogame.v1.PassResponse
+ */
+export class PassResponse extends Message<PassResponse> {
+  /**
+   * @generated from field: gogame.v1.Game game = 1;
+   */
+  game?: Game;
+
+  constructor(data?: PartialMessage<PassResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "gogame.v1.PassResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "game", kind: "message", T: Game },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PassResponse {
+    return new PassResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PassResponse {
+    return new PassResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PassResponse {
+    return new PassResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PassResponse | PlainMessage<PassResponse> | undefined, b: PassResponse | PlainMessage<PassResponse> | undefined): boolean {
+    return proto3.util.equals(PassResponse, a, b);
   }
 }
 

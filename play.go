@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,7 +14,12 @@ import (
 	"github.com/makasim/gogame/protogen/gogame/v1/gogamev1connect"
 )
 
+var winByStrategy string
+
 func main() {
+	flag.StringVar(&winByStrategy, "winby", "pass", "Choose a win by strategy: pass, resign, or timeout.")
+	flag.Parse()
+
 	wg := &sync.WaitGroup{}
 
 	wg.Add(1)
@@ -62,20 +68,6 @@ func playPlayer1() {
 	for sgeStream.Receive() {
 		g = sgeStream.Msg().Game
 
-		if x > 9 {
-			_, err := gsc.Resign(context.Background(), connect.NewRequest(&v1.ResignRequest{
-				GameId:   g.Id,
-				PlayerId: "player1",
-			}))
-			if err != nil && strings.Contains(err.Error(), `rev mismatch`) {
-				continue
-			} else if err != nil {
-				log.Printf("player1: cannot resign: %s", err)
-			}
-			log.Printf("player1: resigned")
-			return
-		}
-
 		switch g.State {
 		case v1.State_STATE_CREATED:
 			continue
@@ -85,6 +77,41 @@ func playPlayer1() {
 			}
 			if g.State == v1.State_STATE_STARTED {
 				log.Printf("player1: plays black; first move")
+			}
+
+			if x > 9 {
+				switch winByStrategy {
+				case "pass":
+					_, err := gsc.Pass(context.Background(), connect.NewRequest(&v1.PassRequest{
+						GameId:   g.Id,
+						GameRev:  g.Rev,
+						PlayerId: "player1",
+					}))
+					if err != nil && strings.Contains(err.Error(), `rev mismatch`) {
+						continue
+					} else if err != nil {
+						log.Printf("player1: cannot pass: %s", err)
+					}
+					log.Printf("player1: passed")
+					continue
+				case "resign":
+					_, err := gsc.Resign(context.Background(), connect.NewRequest(&v1.ResignRequest{
+						GameId:   g.Id,
+						PlayerId: "player1",
+					}))
+					if err != nil && strings.Contains(err.Error(), `rev mismatch`) {
+						continue
+					} else if err != nil {
+						log.Printf("player1: cannot resign: %s", err)
+					}
+					log.Printf("player1: resigned")
+					continue
+				case "timeout":
+					log.Printf("player1: do nothing waiting for timeout")
+					continue
+				default:
+					panic(fmt.Errorf("player1: unknown win by strategy: %s", winByStrategy))
+				}
 			}
 
 			m := g.CurrentMove
@@ -161,7 +188,6 @@ vacantGamesLoop:
 		}
 	}
 	svgCtxCancel()
-	//svgStream.Close()
 
 	log.Printf("player2: joined game %s", g.Id)
 
@@ -187,7 +213,22 @@ vacantGamesLoop:
 				continue
 			}
 			if g.State == v1.State_STATE_STARTED {
-				log.Printf("player1: plays black; first move")
+				log.Printf("player2: plays black; first move")
+			}
+
+			if len(g.PreviousMoves) > 0 && g.PreviousMoves[len(g.PreviousMoves)-1].Pass {
+				_, err := gsc.Pass(context.Background(), connect.NewRequest(&v1.PassRequest{
+					GameId:   g.Id,
+					GameRev:  g.Rev,
+					PlayerId: "player2",
+				}))
+				if err != nil && strings.Contains(err.Error(), `rev mismatch`) {
+					continue
+				} else if err != nil {
+					log.Printf("player2: cannot pass: %s", err)
+				}
+				log.Printf("player2: passed")
+				continue
 			}
 
 			m := g.CurrentMove

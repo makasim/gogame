@@ -47,6 +47,8 @@ const (
 	GameServiceMakeMoveProcedure = "/gogame.v1.GameService/MakeMove"
 	// GameServiceResignProcedure is the fully-qualified name of the GameService's Resign RPC.
 	GameServiceResignProcedure = "/gogame.v1.GameService/Resign"
+	// GameServicePassProcedure is the fully-qualified name of the GameService's Pass RPC.
+	GameServicePassProcedure = "/gogame.v1.GameService/Pass"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -58,6 +60,7 @@ var (
 	gameServiceStreamGameEventsMethodDescriptor  = gameServiceServiceDescriptor.Methods().ByName("StreamGameEvents")
 	gameServiceMakeMoveMethodDescriptor          = gameServiceServiceDescriptor.Methods().ByName("MakeMove")
 	gameServiceResignMethodDescriptor            = gameServiceServiceDescriptor.Methods().ByName("Resign")
+	gameServicePassMethodDescriptor              = gameServiceServiceDescriptor.Methods().ByName("Pass")
 )
 
 // GameServiceClient is a client for the gogame.v1.GameService service.
@@ -68,6 +71,7 @@ type GameServiceClient interface {
 	StreamGameEvents(context.Context, *connect.Request[v1.StreamGameEventsRequest]) (*connect.ServerStreamForClient[v1.StreamGameEventsResponse], error)
 	MakeMove(context.Context, *connect.Request[v1.MakeMoveRequest]) (*connect.Response[v1.MakeMoveResponse], error)
 	Resign(context.Context, *connect.Request[v1.ResignRequest]) (*connect.Response[v1.ResignResponse], error)
+	Pass(context.Context, *connect.Request[v1.PassRequest]) (*connect.Response[v1.PassResponse], error)
 }
 
 // NewGameServiceClient constructs a client for the gogame.v1.GameService service. By default, it
@@ -116,6 +120,12 @@ func NewGameServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(gameServiceResignMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		pass: connect.NewClient[v1.PassRequest, v1.PassResponse](
+			httpClient,
+			baseURL+GameServicePassProcedure,
+			connect.WithSchema(gameServicePassMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -127,6 +137,7 @@ type gameServiceClient struct {
 	streamGameEvents  *connect.Client[v1.StreamGameEventsRequest, v1.StreamGameEventsResponse]
 	makeMove          *connect.Client[v1.MakeMoveRequest, v1.MakeMoveResponse]
 	resign            *connect.Client[v1.ResignRequest, v1.ResignResponse]
+	pass              *connect.Client[v1.PassRequest, v1.PassResponse]
 }
 
 // CreateGame calls gogame.v1.GameService.CreateGame.
@@ -159,6 +170,11 @@ func (c *gameServiceClient) Resign(ctx context.Context, req *connect.Request[v1.
 	return c.resign.CallUnary(ctx, req)
 }
 
+// Pass calls gogame.v1.GameService.Pass.
+func (c *gameServiceClient) Pass(ctx context.Context, req *connect.Request[v1.PassRequest]) (*connect.Response[v1.PassResponse], error) {
+	return c.pass.CallUnary(ctx, req)
+}
+
 // GameServiceHandler is an implementation of the gogame.v1.GameService service.
 type GameServiceHandler interface {
 	CreateGame(context.Context, *connect.Request[v1.CreateGameRequest]) (*connect.Response[v1.CreateGameResponse], error)
@@ -167,6 +183,7 @@ type GameServiceHandler interface {
 	StreamGameEvents(context.Context, *connect.Request[v1.StreamGameEventsRequest], *connect.ServerStream[v1.StreamGameEventsResponse]) error
 	MakeMove(context.Context, *connect.Request[v1.MakeMoveRequest]) (*connect.Response[v1.MakeMoveResponse], error)
 	Resign(context.Context, *connect.Request[v1.ResignRequest]) (*connect.Response[v1.ResignResponse], error)
+	Pass(context.Context, *connect.Request[v1.PassRequest]) (*connect.Response[v1.PassResponse], error)
 }
 
 // NewGameServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -211,6 +228,12 @@ func NewGameServiceHandler(svc GameServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(gameServiceResignMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	gameServicePassHandler := connect.NewUnaryHandler(
+		GameServicePassProcedure,
+		svc.Pass,
+		connect.WithSchema(gameServicePassMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/gogame.v1.GameService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case GameServiceCreateGameProcedure:
@@ -225,6 +248,8 @@ func NewGameServiceHandler(svc GameServiceHandler, opts ...connect.HandlerOption
 			gameServiceMakeMoveHandler.ServeHTTP(w, r)
 		case GameServiceResignProcedure:
 			gameServiceResignHandler.ServeHTTP(w, r)
+		case GameServicePassProcedure:
+			gameServicePassHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -256,4 +281,8 @@ func (UnimplementedGameServiceHandler) MakeMove(context.Context, *connect.Reques
 
 func (UnimplementedGameServiceHandler) Resign(context.Context, *connect.Request[v1.ResignRequest]) (*connect.Response[v1.ResignResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gogame.v1.GameService.Resign is not implemented"))
+}
+
+func (UnimplementedGameServiceHandler) Pass(context.Context, *connect.Request[v1.PassRequest]) (*connect.Response[v1.PassResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gogame.v1.GameService.Pass is not implemented"))
 }
