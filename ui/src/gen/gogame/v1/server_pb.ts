@@ -148,11 +148,23 @@ export class Move extends Message<Move> {
   y = 0;
 
   /**
-   * pass (set by server for history
+   * pass; set by server for history
    *
    * @generated from field: bool pass = 5;
    */
   pass = false;
+
+  /**
+   * undo; set by server
+   *
+   * @generated from field: bool undo_requested = 6;
+   */
+  undoRequested = false;
+
+  /**
+   * @generated from field: bool undo_granted = 7;
+   */
+  undoGranted = false;
 
   constructor(data?: PartialMessage<Move>) {
     super();
@@ -167,6 +179,8 @@ export class Move extends Message<Move> {
     { no: 3, name: "x", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 4, name: "y", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 5, name: "pass", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "undo_requested", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "undo_granted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Move {
@@ -920,6 +934,92 @@ export class ResignResponse extends Message<ResignResponse> {
 
   static equals(a: ResignResponse | PlainMessage<ResignResponse> | undefined, b: ResignResponse | PlainMessage<ResignResponse> | undefined): boolean {
     return proto3.util.equals(ResignResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message gogame.v1.UndoRequest
+ */
+export class UndoRequest extends Message<UndoRequest> {
+  /**
+   * @generated from field: string game_id = 1;
+   */
+  gameId = "";
+
+  /**
+   * @generated from field: int32 game_rev = 2;
+   */
+  gameRev = 0;
+
+  /**
+   * @generated from field: string player_id = 3;
+   */
+  playerId = "";
+
+  constructor(data?: PartialMessage<UndoRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "gogame.v1.UndoRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "game_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "game_rev", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "player_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UndoRequest {
+    return new UndoRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UndoRequest {
+    return new UndoRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UndoRequest {
+    return new UndoRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UndoRequest | PlainMessage<UndoRequest> | undefined, b: UndoRequest | PlainMessage<UndoRequest> | undefined): boolean {
+    return proto3.util.equals(UndoRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message gogame.v1.UndoResponse
+ */
+export class UndoResponse extends Message<UndoResponse> {
+  /**
+   * @generated from field: gogame.v1.Game game = 1;
+   */
+  game?: Game;
+
+  constructor(data?: PartialMessage<UndoResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "gogame.v1.UndoResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "game", kind: "message", T: Game },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UndoResponse {
+    return new UndoResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UndoResponse {
+    return new UndoResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UndoResponse {
+    return new UndoResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UndoResponse | PlainMessage<UndoResponse> | undefined, b: UndoResponse | PlainMessage<UndoResponse> | undefined): boolean {
+    return proto3.util.equals(UndoResponse, a, b);
   }
 }
 
