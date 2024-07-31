@@ -1,4 +1,4 @@
-package resignhandler
+package gamehandlerv2
 
 import (
 	"context"
@@ -8,20 +8,20 @@ import (
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
 	"github.com/makasim/gogame/internal/endedflow"
-	v1 "github.com/makasim/gogame/protogen/gogame/v1"
+	v2 "github.com/makasim/gogame/protogen/gogame/v2"
 )
 
-type Handler struct {
+type ResignHandler struct {
 	e *flowstate.Engine
 }
 
-func New(e *flowstate.Engine) *Handler {
-	return &Handler{
+func NewResignHandler(e *flowstate.Engine) *ResignHandler {
+	return &ResignHandler{
 		e: e,
 	}
 }
 
-func (h *Handler) Resign(_ context.Context, req *connect.Request[v1.ResignRequest]) (*connect.Response[v1.ResignResponse], error) {
+func (h *ResignHandler) Resign(_ context.Context, req *connect.Request[v2.ResignRequest]) (*connect.Response[v2.ResignResponse], error) {
 	if req.Msg.GameId == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game id is required"))
 	}
@@ -39,9 +39,17 @@ func (h *Handler) Resign(_ context.Context, req *connect.Request[v1.ResignReques
 	}
 
 	stateCtx.Current.SetLabel(`game.state`, `ended`)
-	g.State = v1.State_STATE_ENDED
-	g.Winner = convertor.NextPlayer(g)
-	g.WonBy = `resign`
+	g.Changes = append(g.Changes, &v2.Change{
+		Change: &v2.Change_End_{
+			End: &v2.Change_End{
+				Draw:   false,
+				Winner: convertor.AnotherPlayer(g, req.Msg.PlayerId),
+				WonBy:  "resign",
+			},
+		},
+	})
+
+	//g.State = v1.State_STATE_ENDED
 
 	if err = convertor.GameToData(g, d); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -57,7 +65,7 @@ func (h *Handler) Resign(_ context.Context, req *connect.Request[v1.ResignReques
 
 	g.Rev = int32(stateCtx.Current.Rev)
 
-	return connect.NewResponse(&v1.ResignResponse{
+	return connect.NewResponse(&v2.ResignResponse{
 		Game: g,
 	}), nil
 }

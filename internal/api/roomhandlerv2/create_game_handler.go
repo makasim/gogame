@@ -1,4 +1,4 @@
-package creategamehandler
+package roomhandlerv2
 
 import (
 	"context"
@@ -10,20 +10,20 @@ import (
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
 	"github.com/makasim/gogame/internal/createdflow"
-	v1 "github.com/makasim/gogame/protogen/gogame/v1"
+	v2 "github.com/makasim/gogame/protogen/gogame/v2"
 )
 
-type Handler struct {
+type CreateGameHandler struct {
 	e *flowstate.Engine
 }
 
-func New(e *flowstate.Engine) *Handler {
-	return &Handler{
+func NewCreateGameHandler(e *flowstate.Engine) *CreateGameHandler {
+	return &CreateGameHandler{
 		e: e,
 	}
 }
 
-func (h *Handler) CreateGame(_ context.Context, req *connect.Request[v1.CreateGameRequest]) (*connect.Response[v1.CreateGameResponse], error) {
+func (h *CreateGameHandler) CreateGame(_ context.Context, req *connect.Request[v2.CreateGameRequest]) (*connect.Response[v2.CreateGameResponse], error) {
 	if req.Msg.Name == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game name is required"))
 	}
@@ -31,11 +31,11 @@ func (h *Handler) CreateGame(_ context.Context, req *connect.Request[v1.CreateGa
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("player1 name is required"))
 	}
 
-	g := &v1.Game{
+	g := &v2.Game{
 		Id:      strconv.FormatInt(time.Now().UnixNano(), 10),
 		Name:    req.Msg.Name,
 		Player1: req.Msg.Player1,
-		State:   v1.State_STATE_CREATED,
+		// State:   v2.State_STATE_CREATED,
 	}
 
 	d := &flowstate.Data{}
@@ -64,7 +64,7 @@ func (h *Handler) CreateGame(_ context.Context, req *connect.Request[v1.CreateGa
 
 	g.Rev = int32(stateCtx.Current.Rev)
 
-	return connect.NewResponse(&v1.CreateGameResponse{
+	return connect.NewResponse(&v2.CreateGameResponse{
 		Game: g,
 	}), nil
 }

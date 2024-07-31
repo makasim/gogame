@@ -2,11 +2,11 @@ package convertor
 
 import (
 	"github.com/makasim/flowstate"
-	v1 "github.com/makasim/gogame/protogen/gogame/v1"
+	v2 "github.com/makasim/gogame/protogen/gogame/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-func GameToData(g *v1.Game, d *flowstate.Data) error {
+func GameToData(g *v2.Game, d *flowstate.Data) error {
 	b, err := protojson.Marshal(g)
 	if err != nil {
 		return err
@@ -17,8 +17,8 @@ func GameToData(g *v1.Game, d *flowstate.Data) error {
 	return nil
 }
 
-func DataToGame(d *flowstate.Data) (*v1.Game, error) {
-	g := &v1.Game{}
+func DataToGame(d *flowstate.Data) (*v2.Game, error) {
+	g := &v2.Game{}
 	if err := protojson.Unmarshal(d.B, g); err != nil {
 		return nil, err
 	}
@@ -26,7 +26,7 @@ func DataToGame(d *flowstate.Data) (*v1.Game, error) {
 	return g, nil
 }
 
-func FindGame(e *flowstate.Engine, gID string, gRev int32) (*v1.Game, *flowstate.StateCtx, *flowstate.Data, error) {
+func FindGame(e *flowstate.Engine, gID string, gRev int32) (*v2.Game, *flowstate.StateCtx, *flowstate.Data, error) {
 	d := &flowstate.Data{}
 	stateCtx := &flowstate.StateCtx{}
 

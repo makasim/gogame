@@ -1,4 +1,4 @@
-package joingamehandler
+package roomhandlerv2
 
 import (
 	"context"
@@ -11,21 +11,21 @@ import (
 	"github.com/makasim/gogame/internal/api/convertor"
 	"github.com/makasim/gogame/internal/createdflow"
 	"github.com/makasim/gogame/internal/moveflow"
-	v1 "github.com/makasim/gogame/protogen/gogame/v1"
+	v2 "github.com/makasim/gogame/protogen/gogame/v2"
 	"github.com/otrego/clamshell/go/board"
 )
 
-type Handler struct {
+type JoinGameHandler struct {
 	e *flowstate.Engine
 }
 
-func New(e *flowstate.Engine) *Handler {
-	return &Handler{
+func NewJoinGameHandler(e *flowstate.Engine) *JoinGameHandler {
+	return &JoinGameHandler{
 		e: e,
 	}
 }
 
-func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRequest]) (*connect.Response[v1.JoinGameResponse], error) {
+func (h *JoinGameHandler) JoinGame(_ context.Context, req *connect.Request[v2.JoinGameRequest]) (*connect.Response[v2.JoinGameResponse], error) {
 	if req.Msg.GameId == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game id is required"))
 	}
@@ -48,7 +48,7 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 	stateCtx.Current.SetLabel(`game.state`, `started`)
 
 	g.Player2 = req.Msg.Player2
-	g.State = v1.State_STATE_STARTED
+	//g.State = v2.State_STATE_STARTED
 	chooseFirstMove(g)
 
 	g.Board = convertor.FromClamBoard(board.New(19))
@@ -68,21 +68,25 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 
 	g.Rev = int32(stateCtx.Current.Rev)
 
-	return connect.NewResponse(&v1.JoinGameResponse{
+	return connect.NewResponse(&v2.JoinGameResponse{
 		Game: g,
 	}), nil
 }
 
-func chooseFirstMove(g *v1.Game) {
+func chooseFirstMove(g *v2.Game) {
 	rand.Seed(time.Now().UnixNano())
-	players := []*v1.Player{g.Player1, g.Player2}
+	players := []*v2.Player{g.Player1, g.Player2}
 
 	i := rand.Intn(len(players))
 
 	firstPlayer := players[i]
 
-	g.CurrentMove = &v1.Move{
-		PlayerId: firstPlayer.Id,
-		Color:    v1.Color_COLOR_BLACK,
-	}
+	g.Changes = append(g.Changes, &v2.Change{
+		Change: &v2.Change_Move_{
+			Move: &v2.Change_Move{
+				PlayerId: firstPlayer.Id,
+				Color:    v2.Color_COLOR_BLACK,
+			},
+		},
+	})
 }

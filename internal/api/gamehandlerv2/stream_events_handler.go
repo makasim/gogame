@@ -1,31 +1,33 @@
-package streamvacantgameshandler
+package gamehandlerv2
 
 import (
 	"context"
-	"time"
 
 	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
-	v1 "github.com/makasim/gogame/protogen/gogame/v1"
+	v2 "github.com/makasim/gogame/protogen/gogame/v2"
 )
 
-type Handler struct {
+type StreamEventsHandler struct {
 	e *flowstate.Engine
 }
 
-func New(e *flowstate.Engine) *Handler {
-	return &Handler{
+func NewStreamEventsHandler(e *flowstate.Engine) *StreamEventsHandler {
+	return &StreamEventsHandler{
 		e: e,
 	}
 }
 
-func (h *Handler) StreamVacantGames(ctx context.Context, _ *connect.Request[v1.StreamVacantGamesRequest], stream *connect.ServerStream[v1.StreamVacantGamesResponse]) error {
+func (h *StreamEventsHandler) StreamEvents(ctx context.Context, req *connect.Request[v2.StreamEventsRequest], stream *connect.ServerStream[v2.StreamEventsResponse]) error {
+	_, _, _, err := convertor.FindGame(h.e, req.Msg.GameId, 0)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, err)
+	}
+
 	wCmd := flowstate.Watch(map[string]string{
-		`game.state`: `created`,
-	}).WithORLabels(map[string]string{
-		`game.state`: `started`,
-	}).WithSinceTime(time.Now().Add(-time.Minute * 5))
+		`game.id`: req.Msg.GameId,
+	}).WithSinceLatest()
 
 	if err := h.e.Do(wCmd); err != nil {
 		return connect.NewError(connect.CodeInternal, err)
@@ -42,7 +44,7 @@ func (h *Handler) StreamVacantGames(ctx context.Context, _ *connect.Request[v1.S
 				return connect.NewError(connect.CodeInternal, err)
 			}
 
-			if err := stream.Send(&v1.StreamVacantGamesResponse{
+			if err := stream.Send(&v2.StreamEventsResponse{
 				Game: g,
 			}); err != nil {
 				return connect.NewError(connect.CodeInternal, err)

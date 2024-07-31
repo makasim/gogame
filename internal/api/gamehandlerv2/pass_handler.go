@@ -1,9 +1,8 @@
-package passhandler
+package gamehandlerv2
 
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"connectrpc.com/connect"
@@ -11,20 +10,20 @@ import (
 	"github.com/makasim/gogame/internal/api/convertor"
 	"github.com/makasim/gogame/internal/endedflow"
 	"github.com/makasim/gogame/internal/moveflow"
-	v1 "github.com/makasim/gogame/protogen/gogame/v1"
+	v2 "github.com/makasim/gogame/protogen/gogame/v2"
 )
 
-type Handler struct {
+type PassHandler struct {
 	e *flowstate.Engine
 }
 
-func New(e *flowstate.Engine) *Handler {
-	return &Handler{
+func NewPassHandler(e *flowstate.Engine) *PassHandler {
+	return &PassHandler{
 		e: e,
 	}
 }
 
-func (h *Handler) Pass(_ context.Context, req *connect.Request[v1.PassRequest]) (*connect.Response[v1.PassResponse], error) {
+func (h *PassHandler) Pass(_ context.Context, req *connect.Request[v2.PassRequest]) (*connect.Response[v2.PassResponse], error) {
 	if req.Msg.GameId == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game id is required"))
 	}
@@ -43,24 +42,34 @@ func (h *Handler) Pass(_ context.Context, req *connect.Request[v1.PassRequest]) 
 	if stateCtx.Current.Transition.ToID != moveflow.ID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("state is not move"))
 	}
-	if g.CurrentMove.PlayerId != req.Msg.PlayerId {
+	lp := convertor.LastPlayer(g)
+	if lp == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game has no previous move"))
+	}
+	if lp.Id == req.Msg.PlayerId {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("not player's turn"))
 	}
 
-	g.PreviousMoves = append(g.PreviousMoves, &v1.Move{
-		PlayerId: g.CurrentMove.PlayerId,
-		Color:    g.CurrentMove.Color,
-		Pass:     true,
+	g.Changes = append(g.Changes, &v2.Change{
+		Change: &v2.Change_Pass_{
+			Pass: &v2.Change_Pass{
+				PlayerId: req.Msg.PlayerId,
+			},
+		},
 	})
 
-	if len(g.PreviousMoves) > 1 && g.PreviousMoves[len(g.PreviousMoves)-2].Pass {
-		log.Println(123)
+	if len(g.Changes) > 1 && g.Changes[len(g.Changes)-2].GetPass() != nil && g.Changes[len(g.Changes)-2].GetPass().PlayerId == lp.Id {
 		stateCtx.Current.SetLabel(`game.state`, `ended`)
-		g.State = v1.State_STATE_ENDED
+		// g.State = v1.State_STATE_ENDED
 
-		// TODO: add decide on winner algorithm
-		g.Winner = convertor.CurrentPlayer(g)
-		g.WonBy = `score`
+		g.Changes = append(g.Changes, &v2.Change{
+			Change: &v2.Change_End_{
+				End: &v2.Change_End{
+					// TODO: add decide on winner algorithm
+					Draw: true,
+				},
+			},
+		})
 
 		if err = convertor.GameToData(g, d); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
@@ -76,17 +85,13 @@ func (h *Handler) Pass(_ context.Context, req *connect.Request[v1.PassRequest]) 
 
 		g.Rev = int32(stateCtx.Current.Rev)
 
-		return connect.NewResponse(&v1.PassResponse{
+		return connect.NewResponse(&v2.PassResponse{
 			Game: g,
 		}), nil
 	}
 
-	g.State = v1.State_STATE_MOVE
+	//g.State = v1.State_STATE_MOVE
 	stateCtx.Current.SetLabel(`game.state`, `move`)
-	g.CurrentMove = &v1.Move{
-		PlayerId: convertor.NextPlayer(g).Id,
-		Color:    convertor.NextColor(g),
-	}
 
 	if err = convertor.GameToData(g, d); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -103,7 +108,7 @@ func (h *Handler) Pass(_ context.Context, req *connect.Request[v1.PassRequest]) 
 
 	g.Rev = int32(stateCtx.Current.Rev)
 
-	return connect.NewResponse(&v1.PassResponse{
+	return connect.NewResponse(&v2.PassResponse{
 		Game: g,
 	}), nil
 }

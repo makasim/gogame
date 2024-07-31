@@ -12,18 +12,12 @@ import (
 	"github.com/makasim/flowstate"
 	"github.com/makasim/flowstate/memdriver"
 	"github.com/makasim/gogame/internal/api/corsmiddleware"
-	"github.com/makasim/gogame/internal/api/gameservicev1"
-	"github.com/makasim/gogame/internal/api/gameservicev1/creategamehandler"
-	"github.com/makasim/gogame/internal/api/gameservicev1/joingamehandler"
-	"github.com/makasim/gogame/internal/api/gameservicev1/makemovehandler"
-	"github.com/makasim/gogame/internal/api/gameservicev1/passhandler"
-	"github.com/makasim/gogame/internal/api/gameservicev1/resignhandler"
-	"github.com/makasim/gogame/internal/api/gameservicev1/streamgameeventshandler"
-	"github.com/makasim/gogame/internal/api/gameservicev1/streamvacantgameshandler"
+	"github.com/makasim/gogame/internal/api/gamehandlerv2"
+	"github.com/makasim/gogame/internal/api/roomhandlerv2"
 	"github.com/makasim/gogame/internal/createdflow"
 	"github.com/makasim/gogame/internal/endedflow"
 	"github.com/makasim/gogame/internal/moveflow"
-	"github.com/makasim/gogame/protogen/gogame/v1/gogamev1connect"
+	"github.com/makasim/gogame/protogen/gogame/v2/gogamev2connect"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
@@ -57,14 +51,17 @@ func (a *App) Run(ctx context.Context) error {
 	corsMW := corsmiddleware.New(os.Getenv(`CORS_ENABLED`) == `true`)
 
 	mux := http.NewServeMux()
-	mux.Handle(corsMW.WrapPath(gogamev1connect.NewGameServiceHandler(gameservicev1.New(
-		creategamehandler.New(e),
-		joingamehandler.New(e),
-		streamvacantgameshandler.New(e),
-		streamgameeventshandler.New(e),
-		makemovehandler.New(e),
-		resignhandler.New(e),
-		passhandler.New(e),
+	mux.Handle(corsMW.WrapPath(gogamev2connect.NewRoomServiceHandler(roomhandlerv2.New(
+		roomhandlerv2.NewCreateGameHandler(e),
+		roomhandlerv2.NewJoinGameHandler(e),
+		roomhandlerv2.NewStreamGamesHandler(e),
+	))))
+	mux.Handle(corsMW.WrapPath(gogamev2connect.NewGameServiceHandler(gamehandlerv2.New(
+		gamehandlerv2.NewStreamEventsHandler(e),
+		gamehandlerv2.NewMoveHandler(e),
+		gamehandlerv2.NewPassHandler(e),
+		gamehandlerv2.NewUndoHandler(e),
+		gamehandlerv2.NewResignHandler(e),
 	))))
 	mux.Handle("/", corsMW.Wrap(http.FileServer(http.Dir("ui/public"))))
 
