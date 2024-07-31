@@ -1,4 +1,4 @@
-package passhandler
+package undohandler
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
-	"github.com/makasim/gogame/internal/endedflow"
 	"github.com/makasim/gogame/internal/moveflow"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
 )
@@ -23,7 +22,7 @@ func New(e *flowstate.Engine) *Handler {
 	}
 }
 
-func (h *Handler) Pass(_ context.Context, req *connect.Request[v1.PassRequest]) (*connect.Response[v1.PassResponse], error) {
+func (h *Handler) Undo(_ context.Context, req *connect.Request[v1.UndoRequest]) (*connect.Response[v1.UndoResponse], error) {
 	if req.Msg.GameId == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game id is required"))
 	}
@@ -42,52 +41,31 @@ func (h *Handler) Pass(_ context.Context, req *connect.Request[v1.PassRequest]) 
 	if stateCtx.Current.Transition.ToID != moveflow.ID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("state is not move"))
 	}
-	if g.CurrentMove.PlayerId != req.Msg.PlayerId {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("not player's turn"))
-	}
 
-	g.PreviousMoves = append(g.PreviousMoves, &v1.Move{
-		PlayerId: g.CurrentMove.PlayerId,
-		Color:    g.CurrentMove.Color,
-		Pass:     true,
-	})
-
-	if len(g.PreviousMoves) > 1 && g.PreviousMoves[len(g.PreviousMoves)-2].Pass {
-		stateCtx.Current.SetLabel(`game.state`, `ended`)
-		g.State = v1.State_STATE_ENDED
-
-		// TODO: add decide on winner algorithm
-		g.Winner = convertor.CurrentPlayer(g)
-		g.WonBy = `score`
-
-		if err = convertor.GameToData(g, d); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
+	if req.Msg.Request {
+		if g.CurrentMove.PlayerId == req.Msg.PlayerId {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("must be another's player turn"))
 		}
 
-		if err := h.e.Do(flowstate.Commit(
-			flowstate.StoreData(d),
-			flowstate.ReferenceData(stateCtx, d, `game`),
-			flowstate.Pause(stateCtx).WithTransit(endedflow.ID),
-		)); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
+		g.Undo = &v1.Game_Undo{
+			Requested:         true,
+			RequesteePlayerId: req.Msg.PlayerId,
+			Decision:          0,
+		}
+	} else if req.Msg.Decision != 0 {
+		if g.CurrentMove.PlayerId != req.Msg.PlayerId {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("must decide current move player"))
 		}
 
-		g.Rev = int32(stateCtx.Current.Rev)
-
-		return connect.NewResponse(&v1.PassResponse{
-			Game: g,
-		}), nil
+		g.Undo = &v1.Game_Undo{
+			Requested:         true,
+			RequesteePlayerId: req.Msg.PlayerId,
+			Decision:          0,
+		}
 	}
-
-	g.State = v1.State_STATE_MOVE
-	stateCtx.Current.SetLabel(`game.state`, `move`)
-	g.CurrentMove = &v1.Move{
-		PlayerId: convertor.NextPlayer(g).Id,
-		Color:    convertor.NextColor(g),
-	}
-	g.Undo = nil
 
 	if err = convertor.GameToData(g, d); err != nil {
+
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 

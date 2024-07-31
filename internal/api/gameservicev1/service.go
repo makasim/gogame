@@ -2,6 +2,7 @@ package gameservicev1
 
 import (
 	"context"
+	"fmt"
 
 	"connectrpc.com/connect"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
@@ -94,4 +95,8 @@ func (s *Service) Pass(ctx context.Context, req *connect.Request[v1.PassRequest]
 
 func (s *Service) Resign(ctx context.Context, req *connect.Request[v1.ResignRequest]) (*connect.Response[v1.ResignResponse], error) {
 	return s.rh.Resign(ctx, req)
+}
+
+func (s *Service) Undo(context.Context, *connect.Request[v1.UndoRequest]) (*connect.Response[v1.UndoResponse], error) {
+	return nil, fmt.Errorf("not implemented")
 }

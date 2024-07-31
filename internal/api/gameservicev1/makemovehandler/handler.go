@@ -93,6 +93,7 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 		Color:    convertor.NextColor(g),
 	}
 	g.Board = convertor.FromClamBoard(b)
+	g.Undo = nil
 
 	if err = convertor.GameToData(g, d); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

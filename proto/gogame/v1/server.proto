@@ -34,13 +34,15 @@ message Move {
 
   // pass; set by server for history
   bool pass = 5;
-
-  // undo; set by server
-  bool undo_requested = 6;
-  bool undo_granted = 7;
 }
 
 message Game {
+  message Undo {
+    bool requested = 1;
+    string requestee_player_id = 2;
+    int32 decision = 3;
+  }
+
   // created
   string id = 1;
   int32 rev = 2;
@@ -57,6 +59,8 @@ message Game {
   // ended
   Player winner = 9;
   string won_by = 10;
+
+  Undo undo = 12;
 }
 
 message Row {
@@ -135,6 +139,9 @@ message UndoRequest {
   string game_id = 1;
   int32 game_rev = 2;
   string player_id = 3;
+
+  bool request = 4;
+  int32 decision = 5;
 }
 
 message UndoResponse {

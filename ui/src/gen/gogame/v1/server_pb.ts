@@ -154,18 +154,6 @@ export class Move extends Message<Move> {
    */
   pass = false;
 
-  /**
-   * undo; set by server
-   *
-   * @generated from field: bool undo_requested = 6;
-   */
-  undoRequested = false;
-
-  /**
-   * @generated from field: bool undo_granted = 7;
-   */
-  undoGranted = false;
-
   constructor(data?: PartialMessage<Move>) {
     super();
     proto3.util.initPartial(data, this);
@@ -179,8 +167,6 @@ export class Move extends Message<Move> {
     { no: 3, name: "x", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 4, name: "y", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 5, name: "pass", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "undo_requested", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "undo_granted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Move {
@@ -265,6 +251,11 @@ export class Game extends Message<Game> {
    */
   wonBy = "";
 
+  /**
+   * @generated from field: gogame.v1.Game.Undo undo = 12;
+   */
+  undo?: Game_Undo;
+
   constructor(data?: PartialMessage<Game>) {
     super();
     proto3.util.initPartial(data, this);
@@ -284,6 +275,7 @@ export class Game extends Message<Game> {
     { no: 11, name: "board", kind: "message", T: Board },
     { no: 9, name: "winner", kind: "message", T: Player },
     { no: 10, name: "won_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "undo", kind: "message", T: Game_Undo },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Game {
@@ -300,6 +292,55 @@ export class Game extends Message<Game> {
 
   static equals(a: Game | PlainMessage<Game> | undefined, b: Game | PlainMessage<Game> | undefined): boolean {
     return proto3.util.equals(Game, a, b);
+  }
+}
+
+/**
+ * @generated from message gogame.v1.Game.Undo
+ */
+export class Game_Undo extends Message<Game_Undo> {
+  /**
+   * @generated from field: bool requested = 1;
+   */
+  requested = false;
+
+  /**
+   * @generated from field: string requestee_player_id = 2;
+   */
+  requesteePlayerId = "";
+
+  /**
+   * @generated from field: int32 decision = 3;
+   */
+  decision = 0;
+
+  constructor(data?: PartialMessage<Game_Undo>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "gogame.v1.Game.Undo";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "requested", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "requestee_player_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "decision", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Game_Undo {
+    return new Game_Undo().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Game_Undo {
+    return new Game_Undo().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Game_Undo {
+    return new Game_Undo().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Game_Undo | PlainMessage<Game_Undo> | undefined, b: Game_Undo | PlainMessage<Game_Undo> | undefined): boolean {
+    return proto3.util.equals(Game_Undo, a, b);
   }
 }
 
@@ -956,6 +997,16 @@ export class UndoRequest extends Message<UndoRequest> {
    */
   playerId = "";
 
+  /**
+   * @generated from field: bool request = 4;
+   */
+  request = false;
+
+  /**
+   * @generated from field: int32 decision = 5;
+   */
+  decision = 0;
+
   constructor(data?: PartialMessage<UndoRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -967,6 +1018,8 @@ export class UndoRequest extends Message<UndoRequest> {
     { no: 1, name: "game_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "game_rev", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 3, name: "player_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "request", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "decision", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UndoRequest {
