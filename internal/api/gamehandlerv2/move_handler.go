@@ -1,4 +1,4 @@
-package makemovehandler
+package gamehandlerv2
 
 import (
 	"context"
@@ -9,40 +9,34 @@ import (
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
 	"github.com/makasim/gogame/internal/moveflow"
-	v1 "github.com/makasim/gogame/protogen/gogame/v1"
+	v2 "github.com/makasim/gogame/protogen/gogame/v2"
 	"github.com/otrego/clamshell/go/board"
 )
 
-type Handler struct {
+type MoveHandler struct {
 	e *flowstate.Engine
 }
 
-func New(e *flowstate.Engine) *Handler {
-	return &Handler{
+func NewMoveHandler(e *flowstate.Engine) *MoveHandler {
+	return &MoveHandler{
 		e: e,
 	}
 }
 
-func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRequest]) (*connect.Response[v1.MakeMoveResponse], error) {
+func (h *MoveHandler) Move(_ context.Context, req *connect.Request[v2.MoveRequest]) (*connect.Response[v2.MoveResponse], error) {
 	if req.Msg.GameId == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game id is required"))
 	}
 	if req.Msg.GameRev == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game rev is required"))
 	}
-	if req.Msg.Move == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move is required"))
-	}
-	if req.Msg.Move.PlayerId == `` {
+	if req.Msg.PlayerId == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move player id is required"))
 	}
-	if req.Msg.Move.Color <= 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move color is required"))
-	}
-	if req.Msg.Move.X < 0 {
+	if req.Msg.MoveX < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move x is required"))
 	}
-	if req.Msg.Move.Y < 0 {
+	if req.Msg.MoveY < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move y is required"))
 	}
 
@@ -51,30 +45,35 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
+	lp := convertor.LastPlayer(g)
+	if lp == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game has no previous move"))
+	}
+
 	if stateCtx.Current.Transition.ToID != moveflow.ID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("state is not move"))
 	}
-	if g.CurrentMove.PlayerId != req.Msg.Move.PlayerId {
+	if lp.Id == req.Msg.PlayerId {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("not player's turn"))
 	}
 
 	b := board.New(19)
-	for _, m := range g.PreviousMoves {
-		if m.Pass {
+	for _, c := range g.Changes {
+		if c.GetMove() == nil {
 			continue
 		}
 
-		_, err := b.PlaceStone(convertor.ToClamMove(m))
+		_, err := b.PlaceStone(convertor.ToClamMove(c.GetMove()))
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 	}
 
-	nextMove := &v1.Move{
-		PlayerId: g.CurrentMove.PlayerId,
-		Color:    g.CurrentMove.Color,
-		X:        req.Msg.Move.X,
-		Y:        req.Msg.Move.Y,
+	nextMove := &v2.Change_Move{
+		PlayerId: req.Msg.PlayerId,
+		Color:    convertor.NextColor(g),
+		X:        req.Msg.MoveX,
+		Y:        req.Msg.MoveY,
 	}
 
 	l, err := b.PlaceStone(convertor.ToClamMove(nextMove))
@@ -82,16 +81,16 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	convertor.CurrentPlayer(g).CapturedStones += int32(len(l))
+	nextMove.CapturedStones += int32(len(l))
 
-	g.State = v1.State_STATE_MOVE
+	//g.State = v1.State_STATE_MOVE
 	stateCtx.Current.SetLabel(`game.state`, `move`)
 
-	g.PreviousMoves = append(g.PreviousMoves, nextMove)
-	g.CurrentMove = &v1.Move{
-		PlayerId: convertor.NextPlayer(g).Id,
-		Color:    convertor.NextColor(g),
-	}
+	g.Changes = append(g.Changes, &v2.Change{
+		Change: &v2.Change_Move_{
+			Move: nextMove,
+		},
+	})
 	g.Board = convertor.FromClamBoard(b)
 
 	if err = convertor.GameToData(g, d); err != nil {
@@ -109,7 +108,7 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 
 	g.Rev = int32(stateCtx.Current.Rev)
 
-	return connect.NewResponse(&v1.MakeMoveResponse{
+	return connect.NewResponse(&v2.MoveResponse{
 		Game: g,
 	}), nil
 }

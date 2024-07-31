@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package gogame.v1;
+package gogame.v2;
 
 enum Color {
   COLOR_UNSPECIFIED = 0;
@@ -8,51 +8,53 @@ enum Color {
   COLOR_WHITE = 2;
 }
 
-enum State {
-  STATE_UNSPECIFIED = 0;
-  STATE_CREATED = 1;
-  STATE_STARTED = 2;
-  STATE_MOVE = 3;
-  STATE_ENDED = 4;
-}
-
 message Player {
   string id = 1;
   string name = 2;
-
-  int32 captured_stones = 3;
 }
 
-message Move {
-  // current move
-  string player_id = 1;
-  Color color = 2;
+message Change {
+  message Move {
+    string player_id = 1;
+    Color color = 2;
+    int32 x = 3;
+    int32 y = 4;
 
-  // make move
-  int32 x = 3;
-  int32 y = 4;
+    int32 captured_stones = 5;
+  }
 
-  // pass (set by server for history
-  bool pass = 5;
+  message Pass {
+    string player_id = 1;
+  }
+
+  message Undo {
+    string player_id = 1;
+    bool accepted = 3;
+  }
+
+  message End {
+    bool draw = 3;
+    Player winner = 9;
+    string won_by = 10;
+  }
+
+  oneof change {
+    Move move = 1;
+    Pass pass = 2;
+    Undo undo = 3;
+    End end = 4;
+  }
 }
 
 message Game {
-  // created
   string id = 1;
   int32 rev = 2;
   string name = 3;
   Player player1 = 4;
   Player player2 = 5;
-  State state = 6;
 
-  // started
-  Move current_move = 7;
-  repeated Move previous_moves = 8;
+  repeated Change changes = 8;
   Board board = 11;
-
-  // ended
-  Player winner = 9;
-  string won_by = 10;
 }
 
 message Row {
@@ -82,29 +84,31 @@ message JoinGameResponse {
   Game game = 1;
 }
 
-message StreamVacantGamesRequest {
+message StreamGamesRequest {
 
 }
 
-message StreamVacantGamesResponse {
+message StreamGamesResponse {
   Game game = 1;
 }
 
-message StreamGameEventsRequest {
+message StreamEventsRequest {
   string game_id = 1;
 }
 
-message StreamGameEventsResponse {
+message StreamEventsResponse {
   Game game = 1;
 }
 
-message MakeMoveRequest {
+message MoveRequest {
   string game_id = 1;
   int32 game_rev = 2;
-  Move move = 3;
+  string player_id = 3;
+  int32 move_x = 4;
+  int32 move_y = 5;
 }
 
-message MakeMoveResponse {
+message MoveResponse {
   Game game = 1;
 }
 
@@ -118,6 +122,17 @@ message PassResponse {
   Game game = 1;
 }
 
+message UndoRequest {
+  string game_id = 1;
+  int32 game_rev = 2;
+  string player_id = 3;
+  bool accept = 4;
+}
+
+message UndoResponse {
+  Game game = 1;
+}
+
 message ResignRequest {
   string game_id = 1;
   string player_id = 3;
@@ -127,12 +142,16 @@ message ResignResponse {
   Game game = 1;
 }
 
-service GameService {
+service RoomService {
   rpc CreateGame(CreateGameRequest) returns (CreateGameResponse) {}
-  rpc StreamVacantGames(StreamVacantGamesRequest) returns(stream StreamVacantGamesResponse) {}
   rpc JoinGame(JoinGameRequest) returns (JoinGameResponse) {}
-  rpc StreamGameEvents(StreamGameEventsRequest) returns(stream StreamGameEventsResponse) {}
-  rpc MakeMove(MakeMoveRequest) returns (MakeMoveResponse) {}
+  rpc StreamGames(StreamGamesRequest) returns(stream StreamGamesResponse) {}
+}
+
+service GameService {
+  rpc StreamEvents(StreamEventsRequest) returns(stream StreamEventsResponse) {}
+  rpc Move(MoveRequest) returns (MoveResponse) {}
   rpc Resign(ResignRequest) returns (ResignResponse) {}
   rpc Pass(PassRequest) returns (PassResponse) {}
+  rpc Undo(UndoRequest) returns (UndoResponse) {}
 }
