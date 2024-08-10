@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateGameRequest, CreateGameResponse, JoinGameRequest, JoinGameResponse, MakeMoveRequest, MakeMoveResponse, PassRequest, PassResponse, ResignRequest, ResignResponse, StreamGameEventsRequest, StreamGameEventsResponse, StreamVacantGamesRequest, StreamVacantGamesResponse } from "./server_pb.js";
+import { CreateGameRequest, CreateGameResponse, JoinGameRequest, JoinGameResponse, MakeMoveRequest, MakeMoveResponse, PassRequest, PassResponse, ResignRequest, ResignResponse, StreamGameEventsRequest, StreamGameEventsResponse, StreamVacantGamesRequest, StreamVacantGamesResponse, UndoRequest, UndoResponse } from "./server_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -73,6 +73,15 @@ export const GameService = {
       name: "Pass",
       I: PassRequest,
       O: PassResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc gogame.v1.GameService.Undo
+     */
+    undo: {
+      name: "Undo",
+      I: UndoRequest,
+      O: UndoResponse,
       kind: MethodKind.Unary,
     },
   }

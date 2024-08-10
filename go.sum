@@ -1,7 +1,11 @@
 connectrpc.com/connect v1.16.2 h1:ybd6y+ls7GOlb7Bh5C8+ghA6SvCBajHwxssO2CGFjqE=
 connectrpc.com/connect v1.16.2/go.mod h1:n2kgwskMHXC+lVqb18wngEpF95ldBHXjZYJussz5FRc=
+github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b h1:VKtxabqXZkF25pY9ekfRL6a582T4P37/31XEstQ5p58=
+github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b/go.mod h1:SBH7ygxi8pfUlaOkMMuAQtPIUF8ecWP5IEl/CR7VP2Q=
 github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
 github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
+github.com/google/uuid v1.1.2 h1:EVhdT+1Kseyi1/pUmXKaFxYsDNy9RQYkMWRH68J/W7Y=
+github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/makasim/flowstate v0.0.0-20240726152644-aac9e297023a h1:esBoG16bL2h8I28b4u03FLES4xrKnXefYfTJ0rMaCGw=
 github.com/makasim/flowstate v0.0.0-20240726152644-aac9e297023a/go.mod h1:H+51/SlnMtWMeDbqsYyqqON84bBZBK5X+MOqDO1yROQ=
 github.com/otrego/clamshell v0.0.0-20220814024334-043dd78cf746 h1:lRPeFeuZAdclG9NZudMoF5T+sImSK/YqGI7spKR7q/U=

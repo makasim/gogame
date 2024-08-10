@@ -20,6 +20,7 @@ import (
 	"github.com/makasim/gogame/internal/api/gameservicev1/resignhandler"
 	"github.com/makasim/gogame/internal/api/gameservicev1/streamgameeventshandler"
 	"github.com/makasim/gogame/internal/api/gameservicev1/streamvacantgameshandler"
+	"github.com/makasim/gogame/internal/api/gameservicev1/undohandler"
 	"github.com/makasim/gogame/internal/createdflow"
 	"github.com/makasim/gogame/internal/endedflow"
 	"github.com/makasim/gogame/internal/moveflow"
@@ -65,6 +66,7 @@ func (a *App) Run(ctx context.Context) error {
 		makemovehandler.New(e),
 		resignhandler.New(e),
 		passhandler.New(e),
+		undohandler.New(e),
 	))))
 	mux.Handle("/", corsMW.Wrap(http.FileServer(http.Dir("ui/public"))))
 

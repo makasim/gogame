@@ -49,6 +49,8 @@ const (
 	GameServiceResignProcedure = "/gogame.v1.GameService/Resign"
 	// GameServicePassProcedure is the fully-qualified name of the GameService's Pass RPC.
 	GameServicePassProcedure = "/gogame.v1.GameService/Pass"
+	// GameServiceUndoProcedure is the fully-qualified name of the GameService's Undo RPC.
+	GameServiceUndoProcedure = "/gogame.v1.GameService/Undo"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -61,6 +63,7 @@ var (
 	gameServiceMakeMoveMethodDescriptor          = gameServiceServiceDescriptor.Methods().ByName("MakeMove")
 	gameServiceResignMethodDescriptor            = gameServiceServiceDescriptor.Methods().ByName("Resign")
 	gameServicePassMethodDescriptor              = gameServiceServiceDescriptor.Methods().ByName("Pass")
+	gameServiceUndoMethodDescriptor              = gameServiceServiceDescriptor.Methods().ByName("Undo")
 )
 
 // GameServiceClient is a client for the gogame.v1.GameService service.
@@ -72,6 +75,7 @@ type GameServiceClient interface {
 	MakeMove(context.Context, *connect.Request[v1.MakeMoveRequest]) (*connect.Response[v1.MakeMoveResponse], error)
 	Resign(context.Context, *connect.Request[v1.ResignRequest]) (*connect.Response[v1.ResignResponse], error)
 	Pass(context.Context, *connect.Request[v1.PassRequest]) (*connect.Response[v1.PassResponse], error)
+	Undo(context.Context, *connect.Request[v1.UndoRequest]) (*connect.Response[v1.UndoResponse], error)
 }
 
 // NewGameServiceClient constructs a client for the gogame.v1.GameService service. By default, it
@@ -126,6 +130,12 @@ func NewGameServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(gameServicePassMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		undo: connect.NewClient[v1.UndoRequest, v1.UndoResponse](
+			httpClient,
+			baseURL+GameServiceUndoProcedure,
+			connect.WithSchema(gameServiceUndoMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -138,6 +148,7 @@ type gameServiceClient struct {
 	makeMove          *connect.Client[v1.MakeMoveRequest, v1.MakeMoveResponse]
 	resign            *connect.Client[v1.ResignRequest, v1.ResignResponse]
 	pass              *connect.Client[v1.PassRequest, v1.PassResponse]
+	undo              *connect.Client[v1.UndoRequest, v1.UndoResponse]
 }
 
 // CreateGame calls gogame.v1.GameService.CreateGame.
@@ -175,6 +186,11 @@ func (c *gameServiceClient) Pass(ctx context.Context, req *connect.Request[v1.Pa
 	return c.pass.CallUnary(ctx, req)
 }
 
+// Undo calls gogame.v1.GameService.Undo.
+func (c *gameServiceClient) Undo(ctx context.Context, req *connect.Request[v1.UndoRequest]) (*connect.Response[v1.UndoResponse], error) {
+	return c.undo.CallUnary(ctx, req)
+}
+
 // GameServiceHandler is an implementation of the gogame.v1.GameService service.
 type GameServiceHandler interface {
 	CreateGame(context.Context, *connect.Request[v1.CreateGameRequest]) (*connect.Response[v1.CreateGameResponse], error)
@@ -184,6 +200,7 @@ type GameServiceHandler interface {
 	MakeMove(context.Context, *connect.Request[v1.MakeMoveRequest]) (*connect.Response[v1.MakeMoveResponse], error)
 	Resign(context.Context, *connect.Request[v1.ResignRequest]) (*connect.Response[v1.ResignResponse], error)
 	Pass(context.Context, *connect.Request[v1.PassRequest]) (*connect.Response[v1.PassResponse], error)
+	Undo(context.Context, *connect.Request[v1.UndoRequest]) (*connect.Response[v1.UndoResponse], error)
 }
 
 // NewGameServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -234,6 +251,12 @@ func NewGameServiceHandler(svc GameServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(gameServicePassMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	gameServiceUndoHandler := connect.NewUnaryHandler(
+		GameServiceUndoProcedure,
+		svc.Undo,
+		connect.WithSchema(gameServiceUndoMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/gogame.v1.GameService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case GameServiceCreateGameProcedure:
@@ -250,6 +273,8 @@ func NewGameServiceHandler(svc GameServiceHandler, opts ...connect.HandlerOption
 			gameServiceResignHandler.ServeHTTP(w, r)
 		case GameServicePassProcedure:
 			gameServicePassHandler.ServeHTTP(w, r)
+		case GameServiceUndoProcedure:
+			gameServiceUndoHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -285,4 +310,8 @@ func (UnimplementedGameServiceHandler) Resign(context.Context, *connect.Request[
 
 func (UnimplementedGameServiceHandler) Pass(context.Context, *connect.Request[v1.PassRequest]) (*connect.Response[v1.PassResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gogame.v1.GameService.Pass is not implemented"))
+}
+
+func (UnimplementedGameServiceHandler) Undo(context.Context, *connect.Request[v1.UndoRequest]) (*connect.Response[v1.UndoResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("gogame.v1.GameService.Undo is not implemented"))
 }

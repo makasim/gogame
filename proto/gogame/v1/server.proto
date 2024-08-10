@@ -32,8 +32,11 @@ message Move {
   int32 x = 3;
   int32 y = 4;
 
-  // pass (set by server for history
+  // pass set by server for history
   bool pass = 5;
+
+  // undone set by server when undo is accepted
+  bool undone = 6;
 }
 
 message Game {
@@ -96,6 +99,7 @@ message StreamGameEventsRequest {
 
 message StreamGameEventsResponse {
   Game game = 1;
+  Undo undo = 2;
 }
 
 message MakeMoveRequest {
@@ -127,6 +131,39 @@ message ResignResponse {
   Game game = 1;
 }
 
+message Undo {
+  string game_id = 1;
+  int32 game_rev = 2;
+  string player_id = 3;
+  int32 move = 4;
+
+  bool decided = 5;
+  bool accepted = 6;
+}
+
+message UndoRequest {
+  string game_id = 1;
+  int32 game_rev = 2;
+
+  message Request {
+    string player_id = 3;
+  }
+
+  message Decision {
+    string player_id = 3;
+    bool accepted = 4;
+  }
+
+  oneof action {
+    Request request = 3;
+    Decision decision = 4;
+  }
+}
+
+message UndoResponse {
+  Undo undo = 1;
+}
+
 service GameService {
   rpc CreateGame(CreateGameRequest) returns (CreateGameResponse) {}
   rpc StreamVacantGames(StreamVacantGamesRequest) returns(stream StreamVacantGamesResponse) {}
@@ -135,4 +172,5 @@ service GameService {
   rpc MakeMove(MakeMoveRequest) returns (MakeMoveResponse) {}
   rpc Resign(ResignRequest) returns (ResignResponse) {}
   rpc Pass(PassRequest) returns (PassResponse) {}
+  rpc Undo(UndoRequest) returns (UndoResponse) {}
 }

@@ -64,3 +64,18 @@ func FromClamBoard(clamBoard *board.Board) *v1.Board {
 
 	return b
 }
+
+func GameToBoard(g *v1.Game) (*board.Board, error) {
+	b := board.New(19)
+	for _, m := range g.PreviousMoves {
+		if m.Pass || m.Undone {
+			continue
+		}
+
+		if _, err := b.PlaceStone(ToClamMove(m)); err != nil {
+			return nil, err
+		}
+	}
+
+	return b, nil
+}

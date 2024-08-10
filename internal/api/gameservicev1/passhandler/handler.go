@@ -3,7 +3,6 @@ package passhandler
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"connectrpc.com/connect"
@@ -54,7 +53,6 @@ func (h *Handler) Pass(_ context.Context, req *connect.Request[v1.PassRequest]) 
 	})
 
 	if len(g.PreviousMoves) > 1 && g.PreviousMoves[len(g.PreviousMoves)-2].Pass {
-		log.Println(123)
 		stateCtx.Current.SetLabel(`game.state`, `ended`)
 		g.State = v1.State_STATE_ENDED
 

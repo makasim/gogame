@@ -4,10 +4,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"connectrpc.com/connect"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
@@ -52,7 +52,7 @@ func playPlayer1() {
 	}
 
 	g := cgr.Msg.Game
-	log.Printf("player1: created a game %s", g.Id)
+	fmt.Printf("player1: created a game %s\n", g.Id)
 
 	sgeCtx, sgeCtxCancel := context.WithCancel(context.Background())
 	defer sgeCtxCancel()
@@ -68,6 +68,32 @@ func playPlayer1() {
 	for sgeStream.Receive() {
 		g = sgeStream.Msg().Game
 
+		if u := sgeStream.Msg().Undo; u != nil {
+			if u.PlayerId == `player1` {
+				continue
+			}
+			if u.Decided {
+				continue
+			}
+
+			// accept
+			if _, err := gsc.Undo(context.Background(), connect.NewRequest(&v1.UndoRequest{
+				GameId:  u.GameId,
+				GameRev: u.GameRev,
+				Action: &v1.UndoRequest_Decision_{
+					Decision: &v1.UndoRequest_Decision{
+						PlayerId: `player1`,
+						Accepted: true,
+					},
+				},
+			})); err != nil {
+				fmt.Printf("player2: cannot accept undo: %s\n", err)
+				continue
+			}
+			fmt.Printf("player1: accepted undo\n")
+			continue
+		}
+
 		switch g.State {
 		case v1.State_STATE_CREATED:
 			continue
@@ -76,7 +102,7 @@ func playPlayer1() {
 				continue
 			}
 			if g.State == v1.State_STATE_STARTED {
-				log.Printf("player1: plays black; first move")
+				fmt.Printf("player1: plays black; first move\n")
 			}
 
 			if x > 9 {
@@ -90,9 +116,9 @@ func playPlayer1() {
 					if err != nil && strings.Contains(err.Error(), `rev mismatch`) {
 						continue
 					} else if err != nil {
-						log.Printf("player1: cannot pass: %s", err)
+						fmt.Printf("player1: cannot pass: %s\n", err)
 					}
-					log.Printf("player1: passed")
+					fmt.Printf("player1: passed\n")
 					continue
 				case "resign":
 					_, err := gsc.Resign(context.Background(), connect.NewRequest(&v1.ResignRequest{
@@ -102,12 +128,12 @@ func playPlayer1() {
 					if err != nil && strings.Contains(err.Error(), `rev mismatch`) {
 						continue
 					} else if err != nil {
-						log.Printf("player1: cannot resign: %s", err)
+						fmt.Printf("player1: cannot resign: %s\n", err)
 					}
-					log.Printf("player1: resigned")
+					fmt.Printf("player1: resigned\n")
 					continue
 				case "timeout":
-					log.Printf("player1: do nothing waiting for timeout")
+					fmt.Printf("player1: do nothing waiting for timeout\n")
 					continue
 				default:
 					panic(fmt.Errorf("player1: unknown win by strategy: %s", winByStrategy))
@@ -120,31 +146,55 @@ func playPlayer1() {
 
 			x++
 
-			mmr, err := gsc.MakeMove(context.Background(), connect.NewRequest(&v1.MakeMoveRequest{
-				GameId:  g.Id,
-				GameRev: g.Rev,
-				Move:    m,
-			}))
-			if err != nil && strings.Contains(err.Error(), `rev mismatch`) {
-				continue
-			} else if err != nil {
-				log.Printf("player1: cannot make move: %s", err)
-				continue
-			}
-			log.Printf("player1: move made: %d:%d", m.Y, m.X)
+			go func() {
+				time.Sleep(time.Millisecond * 100)
+				mmr, err := gsc.MakeMove(context.Background(), connect.NewRequest(&v1.MakeMoveRequest{
+					GameId:  g.Id,
+					GameRev: g.Rev,
+					Move:    m,
+				}))
+				if err != nil && strings.Contains(err.Error(), `rev mismatch`) {
+					return
+				} else if err != nil {
+					fmt.Printf("player1: cannot make move: %s\n", err)
+					return
+				}
+				fmt.Printf("player1: move made: %d:%d\n", m.Y, m.X)
+				g = mmr.Msg.Game
 
-			g = mmr.Msg.Game
+				if x == 6 {
+					resp, err := gsc.Undo(context.Background(), connect.NewRequest(&v1.UndoRequest{
+						GameId:  g.Id,
+						GameRev: g.Rev,
+						Action: &v1.UndoRequest_Request_{
+							Request: &v1.UndoRequest_Request{
+								PlayerId: "player1",
+							},
+						},
+					}))
+					if err != nil && strings.Contains(err.Error(), `rev mismatch`) {
+						return
+					} else if err != nil {
+						fmt.Printf("player1: cannot undo: %s\n", err)
+						return
+					}
+					fmt.Printf("player1: requested undo\n")
+				}
+			}()
 		case v1.State_STATE_ENDED:
 			if g.Winner.Id == `player1` {
-				log.Printf("player1: won by %s", g.WonBy)
+				fmt.Printf("player1: won by %s\n", g.WonBy)
 			} else {
-				log.Printf("player1: lost by %s", g.WonBy)
+				fmt.Printf("player1: lost by %s\n", g.WonBy)
 			}
 
 			return
 		default:
 			panic(fmt.Errorf("player1: unknown game state: %s", g.State))
 		}
+	}
+	if err := sgeStream.Err(); err != nil {
+		fmt.Printf("player2: stream game events: %s\n", err)
 	}
 }
 
@@ -176,7 +226,7 @@ vacantGamesLoop:
 			if err != nil && strings.Contains(err.Error(), `game is not joinable`) {
 				continue
 			} else if err != nil {
-				log.Printf("player2: cannot join game: %s: %s", g.Id, err)
+				fmt.Printf("player2: cannot join game: %s: %s\n", g.Id, err)
 				continue
 			}
 
@@ -189,7 +239,7 @@ vacantGamesLoop:
 	}
 	svgCtxCancel()
 
-	log.Printf("player2: joined game %s", g.Id)
+	fmt.Printf("player2: joined game %s\n", g.Id)
 
 	sgeCtx, sgeCtxCancel := context.WithCancel(context.Background())
 	defer sgeCtxCancel()
@@ -205,15 +255,39 @@ vacantGamesLoop:
 	for sgeStream.Receive() {
 		g = sgeStream.Msg().Game
 
-		switch g.State {
-		case v1.State_STATE_CREATED:
+		if u := sgeStream.Msg().Undo; u != nil {
+			if u.PlayerId == `player2` {
+				continue
+			}
+			if u.Decided {
+				continue
+			}
+
+			// accept
+			if _, err := gsc.Undo(context.Background(), connect.NewRequest(&v1.UndoRequest{
+				GameId:  u.GameId,
+				GameRev: u.GameRev,
+				Action: &v1.UndoRequest_Decision_{
+					Decision: &v1.UndoRequest_Decision{
+						PlayerId: `player2`,
+						Accepted: true,
+					},
+				},
+			})); err != nil {
+				fmt.Printf("player2: cannot accept undo: %s\n", err)
+				continue
+			}
+			fmt.Printf("player2: accepted undo\n")
 			continue
+		}
+
+		switch g.State {
 		case v1.State_STATE_STARTED, v1.State_STATE_MOVE:
 			if g.CurrentMove.PlayerId != `player2` {
 				continue
 			}
 			if g.State == v1.State_STATE_STARTED {
-				log.Printf("player2: plays black; first move")
+				fmt.Printf("player2: plays black; first move\n")
 			}
 
 			if len(g.PreviousMoves) > 0 && g.PreviousMoves[len(g.PreviousMoves)-1].Pass {
@@ -225,9 +299,9 @@ vacantGamesLoop:
 				if err != nil && strings.Contains(err.Error(), `rev mismatch`) {
 					continue
 				} else if err != nil {
-					log.Printf("player2: cannot pass: %s", err)
+					fmt.Printf("player2: cannot pass: %s", err)
 				}
-				log.Printf("player2: passed")
+				fmt.Printf("player2: passed\n")
 				continue
 			}
 
@@ -237,29 +311,38 @@ vacantGamesLoop:
 
 			x++
 
-			mmr, err := gsc.MakeMove(context.Background(), connect.NewRequest(&v1.MakeMoveRequest{
-				GameId:  g.Id,
-				GameRev: g.Rev,
-				Move:    m,
-			}))
-			if err != nil && strings.Contains(err.Error(), `rev mismatch`) {
-				continue
-			} else if err != nil {
-				log.Printf("player2: cannot make move: %s", err)
-				continue
-			}
-			g = mmr.Msg.Game
-			log.Printf("player2: move made: %d:%d", m.Y, m.X)
+			go func() {
+				time.Sleep(time.Millisecond * 100)
+				_, err := gsc.MakeMove(context.Background(), connect.NewRequest(&v1.MakeMoveRequest{
+					GameId:  g.Id,
+					GameRev: g.Rev,
+					Move:    m,
+				}))
+				if err != nil && strings.Contains(err.Error(), `rev mismatch`) {
+					return
+				} else if err != nil {
+					fmt.Printf("player2: cannot make move: %s\n", err)
+					return
+				}
+				fmt.Printf("player2: move made: %d:%d\n", m.Y, m.X)
+				// g = mmr.Msg.Game
+			}()
+		case v1.State_STATE_CREATED:
+			continue
+
 		case v1.State_STATE_ENDED:
 			if g.Winner.Id == `player2` {
-				log.Printf("player2: won by %s", g.WonBy)
+				fmt.Printf("player2: won by %s\n", g.WonBy)
 			} else {
-				log.Printf("player2: lost by %s", g.WonBy)
+				fmt.Printf("player2: lost by %s\n", g.WonBy)
 			}
 
 			return
 		default:
 			panic(fmt.Errorf("player2: unknown game state: %s", g.State))
 		}
+	}
+	if err := sgeStream.Err(); err != nil {
+		fmt.Printf("player2: stream game events: %s\n", err)
 	}
 }
