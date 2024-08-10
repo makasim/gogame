@@ -32,8 +32,10 @@ message Move {
   int32 x = 3;
   int32 y = 4;
 
-  // pass; set by server for history
+  // pass set by server for history
   bool pass = 5;
+
+  // undone set by server when undo is accepted
   bool undone = 6;
 }
 
