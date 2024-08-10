@@ -114,17 +114,31 @@ func (h *Handler) Undo(_ context.Context, req *connect.Request[v1.UndoRequest]) 
 
 		undo.Accepted = undoDecision.Accepted
 		undo.Decided = true
-		if undo.Accepted {
-			m.Undone = true
-			g.CurrentMove = &v1.Move{
-				PlayerId: m.PlayerId,
-				Color:    m.Color,
-			}
-		}
-
 		if err := convertor.UndoToData(undo, undoD); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
+
+		if !undo.Accepted {
+			if err := h.e.Do(flowstate.Commit(
+				flowstate.StoreData(undoD),
+				flowstate.ReferenceData(undoStateCtx, undoD, `undo`),
+				flowstate.Pause(undoStateCtx).WithTransit(undoflow.ID),
+			)); err != nil {
+				return nil, connect.NewError(connect.CodeInternal, err)
+			}
+
+			return connect.NewResponse(&v1.UndoResponse{
+				Undo: undo,
+			}), nil
+
+		}
+
+		m.Undone = true
+		g.CurrentMove = &v1.Move{
+			PlayerId: m.PlayerId,
+			Color:    m.Color,
+		}
+
 		if err := convertor.GameToData(g, d); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
