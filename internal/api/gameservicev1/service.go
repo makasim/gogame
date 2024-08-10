@@ -2,7 +2,6 @@ package gameservicev1
 
 import (
 	"context"
-	"fmt"
 
 	"connectrpc.com/connect"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
@@ -39,6 +38,10 @@ type passHandler interface {
 	Pass(context.Context, *connect.Request[v1.PassRequest]) (*connect.Response[v1.PassResponse], error)
 }
 
+type undoHandler interface {
+	Undo(_ context.Context, req *connect.Request[v1.UndoRequest]) (*connect.Response[v1.UndoResponse], error)
+}
+
 type Service struct {
 	cgh  createGameHandler
 	jgh  joinGameHandler
@@ -47,6 +50,7 @@ type Service struct {
 	mmh  makeMoveHandler
 	rh   resignHandler
 	ph   passHandler
+	uh   undoHandler
 }
 
 func New(
@@ -57,6 +61,7 @@ func New(
 	mmh makeMoveHandler,
 	rh resignHandler,
 	ph passHandler,
+	uh undoHandler,
 ) *Service {
 	return &Service{
 		cgh:  cgh,
@@ -66,6 +71,7 @@ func New(
 		mmh:  mmh,
 		rh:   rh,
 		ph:   ph,
+		uh:   uh,
 	}
 }
 
@@ -97,6 +103,6 @@ func (s *Service) Resign(ctx context.Context, req *connect.Request[v1.ResignRequ
 	return s.rh.Resign(ctx, req)
 }
 
-func (s *Service) Undo(context.Context, *connect.Request[v1.UndoRequest]) (*connect.Response[v1.UndoResponse], error) {
-	return nil, fmt.Errorf("not implemented")
+func (s *Service) Undo(ctx context.Context, req *connect.Request[v1.UndoRequest]) (*connect.Response[v1.UndoResponse], error) {
+	return s.uh.Undo(ctx, req)
 }

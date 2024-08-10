@@ -10,7 +10,6 @@ import (
 	"github.com/makasim/gogame/internal/api/convertor"
 	"github.com/makasim/gogame/internal/moveflow"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
-	"github.com/otrego/clamshell/go/board"
 )
 
 type Handler struct {
@@ -58,16 +57,9 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("not player's turn"))
 	}
 
-	b := board.New(19)
-	for _, m := range g.PreviousMoves {
-		if m.Pass {
-			continue
-		}
-
-		_, err := b.PlaceStone(convertor.ToClamMove(m))
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
+	b, err := convertor.GameToBoard(g)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	nextMove := &v1.Move{
@@ -93,7 +85,6 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 		Color:    convertor.NextColor(g),
 	}
 	g.Board = convertor.FromClamBoard(b)
-	g.Undo = nil
 
 	if err = convertor.GameToData(g, d); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

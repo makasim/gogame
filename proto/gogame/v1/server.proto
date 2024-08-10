@@ -34,15 +34,10 @@ message Move {
 
   // pass; set by server for history
   bool pass = 5;
+  bool undone = 6;
 }
 
 message Game {
-  message Undo {
-    bool requested = 1;
-    string requestee_player_id = 2;
-    int32 decision = 3;
-  }
-
   // created
   string id = 1;
   int32 rev = 2;
@@ -59,8 +54,6 @@ message Game {
   // ended
   Player winner = 9;
   string won_by = 10;
-
-  Undo undo = 12;
 }
 
 message Row {
@@ -104,6 +97,7 @@ message StreamGameEventsRequest {
 
 message StreamGameEventsResponse {
   Game game = 1;
+  Undo undo = 2;
 }
 
 message MakeMoveRequest {
@@ -135,17 +129,37 @@ message ResignResponse {
   Game game = 1;
 }
 
-message UndoRequest {
+message Undo {
   string game_id = 1;
   int32 game_rev = 2;
   string player_id = 3;
+  int32 move = 4;
 
-  bool request = 4;
-  int32 decision = 5;
+  bool decided = 5;
+  bool accepted = 6;
+}
+
+message UndoRequest {
+  string game_id = 1;
+  int32 game_rev = 2;
+
+  message Request {
+    string player_id = 3;
+  }
+
+  message Decision {
+    string player_id = 3;
+    bool accepted = 4;
+  }
+
+  oneof action {
+    Request request = 3;
+    Decision decision = 4;
+  }
 }
 
 message UndoResponse {
-  Game game = 1;
+  Undo undo = 1;
 }
 
 service GameService {

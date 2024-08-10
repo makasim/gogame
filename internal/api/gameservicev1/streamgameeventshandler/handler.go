@@ -2,6 +2,8 @@ package streamgameeventshandler
 
 import (
 	"context"
+	"log"
+	"strconv"
 
 	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
@@ -27,6 +29,8 @@ func (h *Handler) StreamGameEvents(ctx context.Context, req *connect.Request[v1.
 
 	wCmd := flowstate.Watch(map[string]string{
 		`game.id`: req.Msg.GameId,
+	}).WithORLabels(map[string]string{
+		`undo.game.id`: req.Msg.GameId,
 	}).WithSinceLatest()
 
 	if err := h.e.Do(wCmd); err != nil {
@@ -39,6 +43,48 @@ func (h *Handler) StreamGameEvents(ctx context.Context, req *connect.Request[v1.
 	for {
 		select {
 		case state := <-lis.Listen():
+			if state.Labels[`undo.game.id`] != `` {
+				gID := state.Annotations[`game.id`]
+				gRev, _ := strconv.ParseInt(state.Annotations[`game.rev`], 10, 0)
+
+				d := &flowstate.Data{}
+				stateCtx := &flowstate.StateCtx{}
+
+				undoStateCtx := state.CopyToCtx(&flowstate.StateCtx{})
+				undoD := &flowstate.Data{}
+				if err := h.e.Do(
+					flowstate.GetByID(stateCtx, flowstate.StateID(gID), gRev),
+					flowstate.DereferenceData(stateCtx, d, `game`),
+					flowstate.GetData(d),
+					flowstate.DereferenceData(undoStateCtx, undoD, `undo`),
+					flowstate.GetData(undoD),
+				); err != nil {
+					log.Printf("stream: 1: %s", err)
+					continue
+				}
+
+				u, err := convertor.DataToUndo(undoD)
+				if err != nil {
+					log.Printf("stream: 2: %s", err)
+					continue
+				}
+				g, err := convertor.DataToGame(d)
+				if err != nil {
+					log.Printf("stream: 3: %s", err)
+					continue
+				}
+
+				log.Println(777)
+				if err := stream.Send(&v1.StreamGameEventsResponse{
+					Game: g,
+					Undo: u,
+				}); err != nil {
+					log.Printf("stream: 4: %s", err)
+					continue
+				}
+				continue
+			}
+
 			g, _, _, err := convertor.FindGame(h.e, state.Labels[`game.id`], int32(state.Rev))
 			if err != nil {
 				return connect.NewError(connect.CodeInternal, err)

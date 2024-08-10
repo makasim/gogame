@@ -85,7 +85,6 @@ func (h *Handler) Pass(_ context.Context, req *connect.Request[v1.PassRequest]) 
 		PlayerId: convertor.NextPlayer(g).Id,
 		Color:    convertor.NextColor(g),
 	}
-	g.Undo = nil
 
 	if err = convertor.GameToData(g, d); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

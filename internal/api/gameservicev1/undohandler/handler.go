@@ -3,12 +3,12 @@ package undohandler
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
 	"github.com/makasim/gogame/internal/moveflow"
+	"github.com/makasim/gogame/internal/undoflow"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
 )
 
@@ -26,61 +26,124 @@ func (h *Handler) Undo(_ context.Context, req *connect.Request[v1.UndoRequest]) 
 	if req.Msg.GameId == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game id is required"))
 	}
-	if req.Msg.GameRev == 0 {
+	if req.Msg.GameRev <= 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game rev is required"))
-	}
-	if req.Msg.PlayerId == `` {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move player id is required"))
 	}
 
 	g, stateCtx, d, err := convertor.FindGame(h.e, req.Msg.GameId, req.Msg.GameRev)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-
-	if stateCtx.Current.Transition.ToID != moveflow.ID {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("state is not move"))
+	if len(g.PreviousMoves) == 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("no moves to undo"))
 	}
 
-	if req.Msg.Request {
-		if g.CurrentMove.PlayerId == req.Msg.PlayerId {
-			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("must be another's player turn"))
+	m := g.PreviousMoves[len(g.PreviousMoves)-1]
+
+	switch {
+	case req.Msg.GetRequest() != nil:
+		undoReq := req.Msg.GetRequest()
+
+		if undoReq.PlayerId != m.PlayerId {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("cannot undo other player's move"))
 		}
 
-		g.Undo = &v1.Game_Undo{
-			Requested:         true,
-			RequesteePlayerId: req.Msg.PlayerId,
-			Decision:          0,
-		}
-	} else if req.Msg.Decision != 0 {
-		if g.CurrentMove.PlayerId != req.Msg.PlayerId {
-			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("must decide current move player"))
+		u := &v1.Undo{
+			GameId:   g.Id,
+			GameRev:  g.Rev,
+			PlayerId: m.PlayerId,
+			Move:     int32(len(g.PreviousMoves)),
 		}
 
-		g.Undo = &v1.Game_Undo{
-			Requested:         true,
-			RequesteePlayerId: req.Msg.PlayerId,
-			Decision:          0,
+		undoD := &flowstate.Data{}
+		if err := convertor.UndoToData(u, undoD); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
 		}
+
+		undoStateCtx := &flowstate.StateCtx{
+			Current: flowstate.State{
+				ID: flowstate.StateID(fmt.Sprintf(`undo-%s-%d`, g.Id, g.Rev)),
+				Labels: map[string]string{
+					`undo.game.id`: g.Id,
+				},
+				Annotations: map[string]string{
+					`game.id`:  g.Id,
+					`game.rev`: fmt.Sprintf(`%d`, g.Rev),
+				},
+			},
+		}
+
+		if err := h.e.Do(flowstate.Commit(
+			flowstate.StoreData(undoD),
+			flowstate.ReferenceData(undoStateCtx, undoD, `undo`),
+			flowstate.Pause(undoStateCtx).WithTransit(undoflow.ID),
+		)); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+
+		return connect.NewResponse(&v1.UndoResponse{
+			Undo: u,
+		}), nil
+	case req.Msg.GetDecision() != nil:
+		undoDecision := req.Msg.GetDecision()
+
+		if undoDecision.PlayerId == m.PlayerId {
+			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("cannot decide on own undo"))
+		}
+
+		undoD := &flowstate.Data{}
+		undoStateCtx := &flowstate.StateCtx{}
+		if err := h.e.Do(
+			flowstate.GetByID(undoStateCtx, flowstate.StateID(fmt.Sprintf(`undo-%s-%d`, g.Id, g.Rev)), 0),
+			flowstate.DereferenceData(undoStateCtx, undoD, `undo`),
+			flowstate.GetData(undoD),
+		); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+
+		undo, err := convertor.DataToUndo(undoD)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+
+		if undo.Decided {
+			return connect.NewResponse(&v1.UndoResponse{
+				Undo: undo,
+			}), nil
+		}
+
+		undo.Accepted = undoDecision.Accepted
+		undo.Decided = true
+		if undo.Accepted {
+			m.Undone = true
+			g.CurrentMove = &v1.Move{
+				PlayerId: m.PlayerId,
+				Color:    m.Color,
+			}
+		}
+
+		if err := convertor.UndoToData(undo, undoD); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		if err := convertor.GameToData(g, d); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+
+		if err := h.e.Do(flowstate.Commit(
+			flowstate.StoreData(undoD),
+			flowstate.StoreData(d),
+			flowstate.ReferenceData(undoStateCtx, undoD, `undo`),
+			flowstate.ReferenceData(stateCtx, d, `game`),
+			flowstate.Pause(undoStateCtx).WithTransit(undoflow.ID),
+			flowstate.Pause(stateCtx).WithTransit(moveflow.ID),
+		)); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+
+		return connect.NewResponse(&v1.UndoResponse{
+			Undo: undo,
+		}), nil
+	default:
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid request"))
 	}
-
-	if err = convertor.GameToData(g, d); err != nil {
-
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	if err := h.e.Do(flowstate.Commit(
-		flowstate.StoreData(d),
-		flowstate.ReferenceData(stateCtx, d, `game`),
-		flowstate.Pause(stateCtx).WithTransit(moveflow.ID),
-		flowstate.Delay(stateCtx, time.Second*30).WithCommit(true),
-	)); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	g.Rev = int32(stateCtx.Current.Rev)
-
-	return connect.NewResponse(&v1.PassResponse{
-		Game: g,
-	}), nil
 }
