@@ -25,6 +25,7 @@ import (
 	"github.com/makasim/gogame/internal/endedflow"
 	"github.com/makasim/gogame/internal/moveflow"
 	"github.com/makasim/gogame/protogen/gogame/v1/gogamev1connect"
+	"github.com/makasim/gogame/ui"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
@@ -68,7 +69,8 @@ func (a *App) Run(ctx context.Context) error {
 		passhandler.New(e),
 		undohandler.New(e),
 	))))
-	mux.Handle("/", corsMW.Wrap(http.FileServer(http.Dir("ui/public"))))
+
+	mux.Handle("/", corsMW.Wrap(http.FileServerFS(ui.PublicFS())))
 
 	srv := &http.Server{
 		Addr:    `127.0.0.1:8181`,
