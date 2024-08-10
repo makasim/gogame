@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -179,7 +178,6 @@ func playPlayer1() {
 						fmt.Printf("player1: cannot undo: %s\n", err)
 						return
 					}
-					log.Printf("undo: %+v", resp.Msg.Undo)
 					fmt.Printf("player1: requested undo\n")
 				}
 			}()

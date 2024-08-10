@@ -74,7 +74,6 @@ func (h *Handler) StreamGameEvents(ctx context.Context, req *connect.Request[v1.
 					continue
 				}
 
-				log.Println(777)
 				if err := stream.Send(&v1.StreamGameEventsResponse{
 					Game: g,
 					Undo: u,
