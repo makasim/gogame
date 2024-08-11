@@ -198,8 +198,9 @@ type Move struct {
 	// make move
 	X int32 `protobuf:"varint,3,opt,name=x,proto3" json:"x,omitempty"`
 	Y int32 `protobuf:"varint,4,opt,name=y,proto3" json:"y,omitempty"`
-	// pass; set by server for history
-	Pass   bool `protobuf:"varint,5,opt,name=pass,proto3" json:"pass,omitempty"`
+	// pass set by server for history
+	Pass bool `protobuf:"varint,5,opt,name=pass,proto3" json:"pass,omitempty"`
+	// undone set by server when undo is accepted
 	Undone bool `protobuf:"varint,6,opt,name=undone,proto3" json:"undone,omitempty"`
 }
 
