@@ -13,28 +13,31 @@ export const GamesPage = () => {
   useEffect(() => {
     const abortController = new AbortController();
 
-    (async () => {
-      for await (const { game } of client.streamVacantGames(
-        {},
-        { signal: abortController.signal },
-      )) {
-        if (!game) {
-          alert("No games found");
-          continue;
-        }
-
-        setAvailableGames((games) => {
-          const filteredGames = games.filter((g) => g.id !== game.id);
-
-          return game.state === State.CREATED && game.player1?.id !== playerId
-            ? [game, ...filteredGames]
-            : filteredGames;
-        });
-      }
-    })();
+    try {
+      listenToAvailableGames(abortController.signal);
+    } catch (error) {
+      console.log("No games found", error);
+    }
 
     return () => abortController.abort();
   }, [playerId]);
+
+  async function listenToAvailableGames(signal: AbortSignal) {
+    for await (const { game } of client.streamVacantGames({}, { signal })) {
+      if (!game) {
+        alert("No games found");
+        continue;
+      }
+
+      setAvailableGames((games) => {
+        const filteredGames = games.filter((g) => g.id !== game.id);
+
+        return game.state === State.CREATED && game.player1?.id !== playerId
+          ? [game, ...filteredGames]
+          : filteredGames;
+      });
+    }
+  }
 
   async function joinGame(gameId: string) {
     const { game } = await client.joinGame({
