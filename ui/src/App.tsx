@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import clsx from "clsx";
 
 import { client } from "./api";
-import { Color, Game, State } from "./gen/gogame/v1/server_pb";
+import { Color, Game, State, Undo } from "./gen/gogame/v1/server_pb";
 import { useNavigate, useParams } from "react-router-dom";
 
 export function App() {
@@ -14,20 +14,34 @@ export function App() {
     const abortController = new AbortController();
 
     try {
-      (async () => {
-        for await (const { game } of client.streamGameEvents(
-          { gameId },
-          { signal: abortController.signal },
-        )) {
-          setCurrentGame(game!);
-        }
-      })();
+      listenToGameEvents(abortController.signal);
     } catch (error) {
       console.log("Game not found", error);
     }
 
     return () => abortController.abort();
   }, [gameId]);
+
+  async function listenToGameEvents(signal: AbortSignal) {
+    for await (const res of client.streamGameEvents({ gameId }, { signal })) {
+      const { game, undo } = res;
+
+      setCurrentGame((current) => {
+        if (!game) return current;
+        if (!current) return game;
+
+        if (
+          undo &&
+          !undo.decided &&
+          current?.currentMove?.playerId === playerId
+        ) {
+          if (confirm("Undo requested. Do you accept?")) acceptUndo(undo);
+        }
+
+        return game.rev > current.rev ? game : current;
+      });
+    }
+  }
 
   function resetGame() {
     navigate(`/player/${playerId}`);
@@ -60,14 +74,55 @@ export function App() {
     setCurrentGame(game);
   }
 
+  async function requestUndo() {
+    if (!playerId || !currentGame) return;
+    if (currentGame.currentMove?.playerId === playerId) return;
+
+    try {
+      await client.undo({
+        gameId: currentGame.id,
+        gameRev: currentGame.rev,
+        action: {
+          value: { playerId },
+          case: "request",
+        },
+      });
+    } catch (error) {
+      console.log("Undo not made", error);
+    }
+  }
+
+  async function acceptUndo(undo: Undo) {
+    await client.undo({
+      gameId: undo.gameId,
+      gameRev: undo.gameRev,
+      action: {
+        value: { playerId, accepted: true },
+        case: "decision",
+      },
+    });
+  }
+
   if (!playerId) return void navigate("/");
   if (!gameId) return void navigate(`/player/${playerId}`);
-  if (!currentGame) return <h2>Loading...</h2>;
+  if (!currentGame) {
+    return (
+      <h2>
+        <button onClick={resetGame}>Reset</button>
+        Loading...
+      </h2>
+    );
+  }
 
   const { board, currentMove, state } = currentGame;
 
   if (state === State.CREATED) {
-    return <h2>Waiting for another player</h2>;
+    return (
+      <h2>
+        <button onClick={resetGame}>Reset</button>
+        Waiting for another player
+      </h2>
+    );
   }
 
   const colors = board?.rows.map((row) => row.colors).flat() || [];
@@ -91,6 +146,7 @@ export function App() {
         <h2>
           <button onClick={resign}>Resign</button>
           Your color is {colorName}. {yourTurn ? "Your" : "Opponent's"} turn.
+          {!yourTurn && <button onClick={requestUndo}>Undo</button>}
         </h2>
       )}
 
