@@ -1,20 +1,28 @@
 version: '3'
 
 tasks:
+  genproto:
+    cmds:
+      - buf lint
+      - rm -rf protogen/* ui/src/gen/*
+      - buf generate
+
   build:
     cmds:
       - |
-        # TODO: fix ui build
-        #cd ui
-        #pnpm i
-        #pnpm build
+        cd ui
+        pnpm i
+        pnpm build
         
       - |
+        go mod tidy && go mod vendor
         GOOS=linux GOARCH=amd64 go build -o gogame main/main.go
       - |
         COMMIT=$(git rev-list -1 HEAD | cut -c1-8)
         echo "Building gogame:$COMMIT"
         docker build --platform="linux/amd64" -t "gogame:$COMMIT" .
+    env:
+      VITE_API_URL: "https://gogame.makasim.com/"
   push:
     cmds:
       - |

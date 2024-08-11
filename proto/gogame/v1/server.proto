@@ -161,7 +161,8 @@ message UndoRequest {
 }
 
 message UndoResponse {
-  Undo undo = 1;
+  Game game = 1;
+  Undo undo = 2;
 }
 
 service GameService {

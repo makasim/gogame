@@ -82,6 +82,7 @@ func (h *Handler) Undo(_ context.Context, req *connect.Request[v1.UndoRequest]) 
 		}
 
 		return connect.NewResponse(&v1.UndoResponse{
+			Game: g,
 			Undo: u,
 		}), nil
 	case req.Msg.GetDecision() != nil:
@@ -155,6 +156,7 @@ func (h *Handler) Undo(_ context.Context, req *connect.Request[v1.UndoRequest]) 
 		}
 
 		return connect.NewResponse(&v1.UndoResponse{
+			Game: g,
 			Undo: undo,
 		}), nil
 	default:
