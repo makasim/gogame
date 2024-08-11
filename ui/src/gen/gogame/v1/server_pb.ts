@@ -1151,7 +1151,12 @@ export class UndoRequest_Decision extends Message<UndoRequest_Decision> {
  */
 export class UndoResponse extends Message<UndoResponse> {
   /**
-   * @generated from field: gogame.v1.Undo undo = 1;
+   * @generated from field: gogame.v1.Game game = 1;
+   */
+  game?: Game;
+
+  /**
+   * @generated from field: gogame.v1.Undo undo = 2;
    */
   undo?: Undo;
 
@@ -1163,7 +1168,8 @@ export class UndoResponse extends Message<UndoResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "gogame.v1.UndoResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "undo", kind: "message", T: Undo },
+    { no: 1, name: "game", kind: "message", T: Game },
+    { no: 2, name: "undo", kind: "message", T: Undo },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UndoResponse {
