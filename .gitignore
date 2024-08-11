@@ -1,3 +1,5 @@
+.DS_Store
 /vendor
 /ui/node_modules
 /ui/.pnpm-store
+/ul/.DS_Store

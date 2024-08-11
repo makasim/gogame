@@ -15,6 +15,6 @@ plugins:
   - remote: buf.build/connectrpc/es:v1.4.0
     out: ui/src/gen
     opt: target=ts
-  - remote: buf.build/bufbuild/es
+  - remote: buf.build/bufbuild/es:v1.10.0
     out: ui/src/gen
     opt: target=ts
