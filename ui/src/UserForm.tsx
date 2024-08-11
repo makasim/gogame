@@ -1,28 +1,23 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-type Props = {
-  onSave: (userName: string) => void;
-};
+export const UserForm = () => {
+  const [playerId, setPlayerId] = useState("");
+  const navigate = useNavigate();
 
-export const UserForm = ({ onSave }: Props) => {
-  const [user, setUser] = useState("");
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!playerId) return alert("Please enter your name");
+    navigate(`/player/${playerId}`);
+  };
 
   return (
-    <div>
+    <form onSubmit={handleSubmit}>
       <input
-        type="text"
         placeholder="Enter your name"
-        onChange={(e) => setUser(e.target.value)}
+        onChange={(e) => setPlayerId(e.target.value)}
       />
-      <button
-        onClick={() => {
-          if (!user) return;
-
-          onSave(user);
-        }}
-      >
-        Submit
-      </button>
-    </div>
+      <button>Submit</button>
+    </form>
   );
 };

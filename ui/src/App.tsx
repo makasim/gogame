@@ -3,105 +3,34 @@ import clsx from "clsx";
 
 import { client } from "./api";
 import { Color, Game, State } from "./gen/gogame/v1/server_pb";
-import { UserForm } from "./UserForm";
-import { Games } from "./Games";
+import { useNavigate, useParams } from "react-router-dom";
 
 export function App() {
-  const [playerId, setPlayerId] = useState(localStorage.getItem("currentUser"));
-  const [availableGames, setAvailableGames] = useState<Game[]>([]);
-  const [currentGame, setCurrentGame] = useState<Game | null>(() => {
-    const game = localStorage.getItem("currentGame");
-    return game ? JSON.parse(game) : null;
-  });
+  const navigate = useNavigate();
+  const { playerId, gameId } = useParams();
+  const [currentGame, setCurrentGame] = useState<Game | null>(null);
 
   useEffect(() => {
-    listenToAwailableGames();
-  }, []);
-
-  useEffect(() => {
-    if (!playerId) return;
-    localStorage.setItem("currentUser", playerId);
-  }, [playerId]);
-
-  useEffect(() => {
-    if (!currentGame) return;
-    localStorage.setItem("currentGame", JSON.stringify(currentGame));
+    const abortController = new AbortController();
 
     try {
-      listenToGame(currentGame.id);
+      (async () => {
+        for await (const { game } of client.streamGameEvents(
+          { gameId },
+          { signal: abortController.signal },
+        )) {
+          setCurrentGame(game!);
+        }
+      })();
     } catch (error) {
-      console.error("Game not found", error);
-      resetGame();
+      console.log("Game not found", error);
     }
-  }, [currentGame?.id]);
 
-  if (!playerId) {
-    return <UserForm onSave={setPlayerId} />;
-  }
-
-  if (!currentGame) {
-    return (
-      <>
-        <button onClick={createGame}>Create Game</button>
-        <Games games={availableGames} onJoin={joinGame} />
-      </>
-    );
-  }
-
-  if (currentGame.state === State.CREATED) {
-    return <h2>Waiting for another player</h2>;
-  }
+    return () => abortController.abort();
+  }, [gameId]);
 
   function resetGame() {
-    setCurrentGame(null);
-    localStorage.removeItem("currentGame");
-  }
-
-  async function createGame() {
-    if (!playerId) return;
-
-    const { game } = await client.createGame({
-      name: `Game-${Date.now()}`,
-      player1: { id: playerId, name: playerId },
-    });
-
-    if (!game) return alert("Game not created");
-
-    setCurrentGame(game);
-  }
-
-  async function joinGame(gameId: string) {
-    if (!playerId) return;
-
-    const { game } = await client.joinGame({
-      gameId,
-      player2: { id: playerId, name: playerId },
-    });
-
-    if (!game) return alert("Game is not joinable");
-
-    setCurrentGame(game);
-  }
-
-  async function listenToAwailableGames() {
-    for await (const { game } of client.streamVacantGames({})) {
-      if (!game) return alert("No games found");
-
-      setAvailableGames((games) => {
-        const filteredGames = games.filter((g) => g.id !== game.id);
-
-        return game.state === State.CREATED && game.player1?.id !== playerId
-          ? [game, ...filteredGames]
-          : filteredGames;
-      });
-    }
-  }
-
-  async function listenToGame(gameId: string) {
-    for await (const { game } of client.streamGameEvents({ gameId })) {
-      if (!game) return alert("Game not found");
-      setCurrentGame(game);
-    }
+    navigate(`/player/${playerId}`);
   }
 
   async function putStone(i: number) {
@@ -131,7 +60,24 @@ export function App() {
     setCurrentGame(game);
   }
 
-  const colors = currentGame.board?.rows.map((row) => row.colors).flat() || [];
+  if (!playerId) return void navigate("/");
+  if (!gameId) return void navigate(`/player/${playerId}`);
+  if (!currentGame) return <h2>Loading...</h2>;
+
+  const { board, currentMove, state } = currentGame;
+
+  if (state === State.CREATED) {
+    return <h2>Waiting for another player</h2>;
+  }
+
+  const colors = board?.rows.map((row) => row.colors).flat() || [];
+  const yourTurn = currentMove?.playerId === playerId;
+  const color = yourTurn
+    ? currentMove?.color
+    : currentMove?.color === Color.BLACK
+      ? Color.WHITE
+      : Color.BLACK;
+  const colorName = color === Color.BLACK ? "black" : "white";
 
   return (
     <div className="App">
@@ -139,15 +85,12 @@ export function App() {
         <h2>
           Game ended.{" "}
           {currentGame.winner?.id === playerId ? "You won!" : "You lost!"}
-          {currentGame.wonBy}
           <button onClick={resetGame}>Reset</button>
         </h2>
       ) : (
         <h2>
           <button onClick={resign}>Resign</button>
-
-          {currentGame.currentMove?.playerId === playerId &&
-            `You turn ${currentGame.currentMove.color === Color.BLACK ? "Black" : "White"}`}
+          Your color is {colorName}. {yourTurn ? "Your" : "Opponent's"} turn.
         </h2>
       )}
 
