@@ -1,0 +1,34 @@
+version: '3'
+
+tasks:
+  build:
+    cmds:
+      - |
+        # TODO: fix ui build
+        #cd ui
+        #pnpm i
+        #pnpm build
+        
+      - |
+        GOOS=linux GOARCH=amd64 go build -o gogame main/main.go
+      - |
+        COMMIT=$(git rev-list -1 HEAD | cut -c1-8)
+        echo "Building gogame:$COMMIT"
+        docker build --platform="linux/amd64" -t "gogame:$COMMIT" .
+  push:
+    cmds:
+      - |
+        COMMIT=$(git rev-list -1 HEAD | cut -c1-8)
+        docker tag "gogame:$COMMIT" "registry.makasim.com/gogame:$COMMIT"
+        docker tag "gogame:$COMMIT" "registry.makasim.com/gogame:latest"
+        echo "Pushing registry.makasim.com/gogame:$COMMIT"
+        docker push "registry.makasim.com/gogame:$COMMIT"
+        echo "Pushing registry.makasim.com/gogame:latest"
+        docker push "registry.makasim.com/gogame:latest"
+
+  deploy:
+    cmds:
+      - |
+        ssh "root@gogame.makasim.com" "mkdir -p /gogame"
+        scp "docker-compose.deploy.yml" "root@gogame.makasim.com:/gogame"
+        ssh "root@gogame.makasim.com" "docker stack deploy --with-registry-auth --compose-file /gogame/docker-compose.deploy.yml gogame"

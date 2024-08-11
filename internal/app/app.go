@@ -73,7 +73,7 @@ func (a *App) Run(ctx context.Context) error {
 	mux.Handle("/", corsMW.Wrap(http.FileServerFS(ui.PublicFS())))
 
 	srv := &http.Server{
-		Addr:    `127.0.0.1:8181`,
+		Addr:    `0.0.0.0:8181`,
 		Handler: h2c.NewHandler(mux, &http2.Server{}),
 	}
 

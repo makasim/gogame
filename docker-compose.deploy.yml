@@ -1,0 +1,21 @@
+version: '3.7'
+
+services:
+  app2:
+    image: 'registry.makasim.com/gogame:latest'
+    working_dir: '/app'
+    networks:
+      - 'external'
+      - 'default'
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.port=8181"
+        - "traefik.frontend.rule=Host:gogame.makasim.com"
+        - "traefik.frontend.entryPoints=http,https"
+        - "traefik.frontend.redirect.entryPoint=https"
+
+networks:
+  external:
+    external:
+      name: 'traefik'
