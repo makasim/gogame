@@ -1,6 +1,12 @@
 version: '3'
 
 tasks:
+  genproto:
+    cmds:
+      - buf lint
+      - rm -rf protogen/* ui/src/gen/*
+      - buf generate
+
   build:
     cmds:
       - |

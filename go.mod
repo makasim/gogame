@@ -16,3 +16,5 @@ require (
 	github.com/google/uuid v1.1.2 // indirect
 	golang.org/x/text v0.16.0 // indirect
 )
+
+replace github.com/otrego/clamshell => /Users/makasim/projects/Makasim/clamshell
