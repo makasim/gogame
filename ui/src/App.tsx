@@ -89,18 +89,28 @@ export function App() {
       });
     } catch (error) {
       console.log("Undo not made", error);
+      alert("Undo not made");
     }
   }
 
   async function acceptUndo(undo: Undo) {
-    await client.undo({
-      gameId: undo.gameId,
-      gameRev: undo.gameRev,
-      action: {
-        value: { playerId, accepted: true },
-        case: "decision",
-      },
-    });
+    try {
+      const { game } = await client.undo({
+        gameId: undo.gameId,
+        gameRev: undo.gameRev,
+        action: {
+          value: { playerId, accepted: true },
+          case: "decision",
+        },
+      });
+
+      if (!game) return alert("Undo not accepted");
+
+      setCurrentGame(game);
+    } catch (error) {
+      console.log("Undo not accepted", error);
+      alert("Undo not accepted");
+    }
   }
 
   if (!playerId) return void navigate("/");
