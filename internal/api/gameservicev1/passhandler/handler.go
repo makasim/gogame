@@ -84,6 +84,7 @@ func (h *Handler) Pass(_ context.Context, req *connect.Request[v1.PassRequest]) 
 	g.CurrentMove = &v1.Move{
 		PlayerId: convertor.NextPlayer(g).Id,
 		Color:    convertor.NextColor(g),
+		EndAt:    time.Now().Add(time.Duration(g.MoveDurationSec) * time.Second).Unix(),
 	}
 
 	if err = convertor.GameToData(g, d); err != nil {

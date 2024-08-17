@@ -3,6 +3,7 @@ package undohandler
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
@@ -138,6 +139,7 @@ func (h *Handler) Undo(_ context.Context, req *connect.Request[v1.UndoRequest]) 
 		g.CurrentMove = &v1.Move{
 			PlayerId: m.PlayerId,
 			Color:    m.Color,
+			EndAt:    time.Now().Add(time.Duration(g.MoveDurationSec) * time.Second).Unix(),
 		}
 
 		if err := convertor.GameToData(g, d); err != nil {

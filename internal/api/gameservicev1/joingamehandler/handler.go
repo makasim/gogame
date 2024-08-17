@@ -84,5 +84,6 @@ func chooseFirstMove(g *v1.Game) {
 	g.CurrentMove = &v1.Move{
 		PlayerId: firstPlayer.Id,
 		Color:    v1.Color_COLOR_BLACK,
+		EndAt:    time.Now().Add(time.Duration(g.MoveDurationSec) * time.Second).Unix(),
 	}
 }
