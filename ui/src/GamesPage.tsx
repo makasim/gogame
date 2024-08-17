@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Game, State } from "./gen/gogame/v1/server_pb";
 
 export const GamesPage = () => {
+  const [duration, setDuration] = useState<number>(60);
   const navigate = useNavigate();
   const { playerId } = useParams();
 
@@ -54,6 +55,7 @@ export const GamesPage = () => {
     const { game } = await client.createGame({
       name: `Game-${Date.now()}`,
       player1: { id: playerId, name: playerId },
+      moveDurationSec: duration,
     });
 
     if (!game) return alert("Can't create a game");
@@ -65,6 +67,12 @@ export const GamesPage = () => {
 
   return (
     <>
+      <input
+        type="number"
+        min="5"
+        defaultValue={duration}
+        onChange={(e) => setDuration(+e.target.value)}
+      />
       <button onClick={createGame}>Create Game</button>
       <Games games={availableGames} onJoin={joinGame} />
     </>

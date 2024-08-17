@@ -73,6 +73,7 @@ message Board {
 message CreateGameRequest {
   string name = 1;
   Player player1 = 2;
+  int32 move_duration_sec = 3;
 }
 
 message CreateGameResponse {
