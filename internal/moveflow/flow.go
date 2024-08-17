@@ -1,6 +1,7 @@
 package moveflow
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/makasim/flowstate"
@@ -49,7 +50,9 @@ func (f *Flow) Execute(stateCtx *flowstate.StateCtx, e *flowstate.Engine) (flows
 			flowstate.StoreData(d),
 			flowstate.ReferenceData(stateCtx, d, `game`),
 			flowstate.Pause(stateCtx).WithTransit(endedflow.ID),
-		)); err != nil {
+		)); err != nil && errors.Is(err, flowstate.ErrCommitConflict{}) {
+			return flowstate.Noop(stateCtx), nil
+		} else if err != nil {
 			return nil, err
 		}
 

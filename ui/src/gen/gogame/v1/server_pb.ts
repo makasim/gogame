@@ -231,6 +231,11 @@ export class Game extends Message<Game> {
   state = State.UNSPECIFIED;
 
   /**
+   * @generated from field: int32 move_duration_sec = 12;
+   */
+  moveDurationSec = 0;
+
+  /**
    * started
    *
    * @generated from field: gogame.v1.Move current_move = 7;
@@ -273,6 +278,7 @@ export class Game extends Message<Game> {
     { no: 4, name: "player1", kind: "message", T: Player },
     { no: 5, name: "player2", kind: "message", T: Player },
     { no: 6, name: "state", kind: "enum", T: proto3.getEnumType(State) },
+    { no: 12, name: "move_duration_sec", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 7, name: "current_move", kind: "message", T: Move },
     { no: 8, name: "previous_moves", kind: "message", T: Move, repeated: true },
     { no: 11, name: "board", kind: "message", T: Board },

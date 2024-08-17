@@ -22,7 +22,7 @@ tasks:
         echo "Building gogame:$COMMIT"
         docker build --platform="linux/amd64" -t "gogame:$COMMIT" .
     env:
-      VITE_API_URL: "https://gogame.makasim.com/"
+      VITE_API_URL: '{{ default "https://gogame.makasim.com/" .VITE_API_URL }}'
   push:
     cmds:
       - |
