@@ -141,6 +141,11 @@ func (h *Handler) Undo(_ context.Context, req *connect.Request[v1.UndoRequest]) 
 			Color:    m.Color,
 			EndAt:    time.Now().Add(time.Duration(g.MoveDurationSec) * time.Second).Unix(),
 		}
+		b, err := convertor.GameToBoard(g)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		g.Board = convertor.FromClamBoard(b)
 
 		if err := convertor.GameToData(g, d); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
