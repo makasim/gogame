@@ -154,12 +154,14 @@ export function App() {
   }
 
   const colors = board?.rows.map((row) => row.colors).flat() || [];
-  const color = yourTurn
+  const yourColor = yourTurn
     ? currentMove?.color
     : currentMove?.color === Color.BLACK
       ? Color.WHITE
       : Color.BLACK;
-  const colorName = color === Color.BLACK ? "black" : "white";
+  const colorName = yourColor === Color.BLACK ? "black" : "white";
+
+  const lastMove = currentGame.previousMoves.at(-1);
 
   return (
     <div className="App">
@@ -192,6 +194,7 @@ export function App() {
             className={clsx("cell", {
               black: color === Color.BLACK,
               white: color === Color.WHITE,
+              last: lastMove && i === lastMove.x + lastMove.y * 19,
             })}
           ></button>
         ))}
