@@ -31,11 +31,15 @@ export const GamesPage = () => {
       }
 
       setAvailableGames((games) => {
-        const filteredGames = games.filter((g) => g.id !== game.id);
+        const existingGame = games.find((g) => g.id === game.id);
+        const updatedGames = [...games];
 
-        return game.state === State.CREATED && game.player1?.id !== playerId
-          ? [game, ...filteredGames]
-          : filteredGames;
+        if (!existingGame) updatedGames.push(game);
+
+        return updatedGames
+          .map((g) => (g.id === game.id ? game : g))
+          .filter((g) => g.state === State.CREATED)
+          .filter((g) => g.player1?.id !== playerId)
       });
     }
   }
