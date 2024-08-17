@@ -32,10 +32,11 @@ func (h *Handler) CreateGame(_ context.Context, req *connect.Request[v1.CreateGa
 	}
 
 	g := &v1.Game{
-		Id:      strconv.FormatInt(time.Now().UnixNano(), 10),
-		Name:    req.Msg.Name,
-		Player1: req.Msg.Player1,
-		State:   v1.State_STATE_CREATED,
+		Id:              strconv.FormatInt(time.Now().UnixNano(), 10),
+		Name:            req.Msg.Name,
+		Player1:         req.Msg.Player1,
+		State:           v1.State_STATE_CREATED,
+		MoveDurationSec: req.Msg.MoveDurationSec,
 	}
 	if g.MoveDurationSec == 0 {
 		g.MoveDurationSec = 60
