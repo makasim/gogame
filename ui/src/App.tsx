@@ -163,7 +163,7 @@ export function App() {
       : Color.BLACK;
   const colorName = yourColor === Color.BLACK ? "black" : "white";
 
-  const lastMove = currentGame.previousMoves.findLast((m) => !m.undone || !m.pass);
+  const lastMove = currentGame.previousMoves.findLast((m) => !m.undone && !m.pass);
 
   return (
     <div className="App">
