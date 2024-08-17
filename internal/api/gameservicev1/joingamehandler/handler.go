@@ -61,7 +61,7 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 		flowstate.StoreData(d),
 		flowstate.ReferenceData(stateCtx, d, `game`),
 		flowstate.Pause(stateCtx).WithTransit(moveflow.ID),
-		flowstate.Delay(stateCtx, time.Second*30).WithCommit(true),
+		flowstate.Delay(stateCtx, time.Duration(g.MoveDurationSec)*time.Second).WithCommit(true),
 	)); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

@@ -47,6 +47,7 @@ message Game {
   Player player1 = 4;
   Player player2 = 5;
   State state = 6;
+  int32 move_duration_sec = 12;
 
   // started
   Move current_move = 7;

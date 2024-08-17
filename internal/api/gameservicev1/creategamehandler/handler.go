@@ -37,6 +37,9 @@ func (h *Handler) CreateGame(_ context.Context, req *connect.Request[v1.CreateGa
 		Player1: req.Msg.Player1,
 		State:   v1.State_STATE_CREATED,
 	}
+	if g.MoveDurationSec == 0 {
+		g.MoveDurationSec = 60
+	}
 
 	d := &flowstate.Data{}
 	if err := convertor.GameToData(g, d); err != nil {
@@ -58,6 +61,7 @@ func (h *Handler) CreateGame(_ context.Context, req *connect.Request[v1.CreateGa
 		flowstate.StoreData(d),
 		flowstate.ReferenceData(stateCtx, d, `game`),
 		flowstate.Pause(stateCtx).WithTransit(createdflow.ID),
+		flowstate.Delay(stateCtx, time.Minute).WithCommit(true),
 	)); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
