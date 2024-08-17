@@ -25,6 +25,8 @@ func (h *Handler) StreamVacantGames(ctx context.Context, _ *connect.Request[v1.S
 		`game.state`: `created`,
 	}).WithORLabels(map[string]string{
 		`game.state`: `started`,
+	}).WithORLabels(map[string]string{
+		`game.state`: `ended`,
 	}).WithSinceTime(time.Now().Add(-time.Minute * 5))
 
 	if err := h.e.Do(wCmd); err != nil {
