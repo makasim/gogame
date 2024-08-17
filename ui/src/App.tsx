@@ -9,6 +9,24 @@ export function App() {
   const navigate = useNavigate();
   const { playerId, gameId } = useParams();
   const [currentGame, setCurrentGame] = useState<Game | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState<number>(0);
+
+  const yourTurn = currentGame?.currentMove?.playerId === playerId;
+
+  useEffect(() => {
+    console.log(currentGame, yourTurn);
+    
+    if (!currentGame) return;
+    if (!currentGame.currentMove) return;
+    if (!yourTurn) return void setSecondsLeft(0);
+
+    const interval = setInterval(() => {
+      const timeLeft = Number(currentGame.currentMove?.endAt) * 1000 - Date.now();
+      setSecondsLeft(Math.floor(timeLeft / 1000));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [yourTurn, currentGame]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -136,7 +154,6 @@ export function App() {
   }
 
   const colors = board?.rows.map((row) => row.colors).flat() || [];
-  const yourTurn = currentMove?.playerId === playerId;
   const color = yourTurn
     ? currentMove?.color
     : currentMove?.color === Color.BLACK
@@ -163,6 +180,7 @@ export function App() {
           {!yourTurn && !currentGame.previousMoves.at(-1)?.undone && (
             <button onClick={requestUndo}>Undo</button>
           )}
+          {secondsLeft > 0 ? `${secondsLeft}s left` : ""}
         </h2>
       )}
 
