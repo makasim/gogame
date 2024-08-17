@@ -163,7 +163,7 @@ func playPlayer1() {
 				g = mmr.Msg.Game
 
 				if x == 6 {
-					resp, err := gsc.Undo(context.Background(), connect.NewRequest(&v1.UndoRequest{
+					_, err := gsc.Undo(context.Background(), connect.NewRequest(&v1.UndoRequest{
 						GameId:  g.Id,
 						GameRev: g.Rev,
 						Action: &v1.UndoRequest_Request_{
