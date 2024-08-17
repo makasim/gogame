@@ -1,27 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 
 import { client } from "./api";
 import { Color, Game, State, Undo } from "./gen/gogame/v1/server_pb";
 import { useNavigate, useParams } from "react-router-dom";
 
+import turnSound from "./turn.mp3";
+
 export function App() {
   const navigate = useNavigate();
   const { playerId, gameId } = useParams();
   const [currentGame, setCurrentGame] = useState<Game | null>(null);
   const [secondsLeft, setSecondsLeft] = useState<number>(0);
+  const sound = useRef<HTMLAudioElement>(null);
 
   const yourTurn = currentGame?.currentMove?.playerId === playerId;
 
   useEffect(() => {
-    console.log(currentGame, yourTurn);
-    
+    if (yourTurn) sound.current?.play();
+    else sound.current?.pause();
+  }, [yourTurn]);
+
+  useEffect(() => {
     if (!currentGame) return;
     if (!currentGame.currentMove) return;
     if (!yourTurn) return void setSecondsLeft(0);
 
     const interval = setInterval(() => {
-      const timeLeft = Number(currentGame.currentMove?.endAt) * 1000 - Date.now();
+      const timeLeft =
+        Number(currentGame.currentMove?.endAt) * 1000 - Date.now();
       setSecondsLeft(Math.floor(timeLeft / 1000));
     }, 1000);
 
@@ -179,7 +186,9 @@ export function App() {
       : Color.BLACK;
   const colorName = yourColor === Color.BLACK ? "black" : "white";
 
-  const lastMove = currentGame.previousMoves.findLast((m) => !m.undone && !m.pass);
+  const lastMove = currentGame.previousMoves.findLast(
+    (m) => !m.undone && !m.pass,
+  );
 
   return (
     <div className="App">
@@ -198,11 +207,9 @@ export function App() {
           <button onClick={resign}>Resign</button>
           {yourTurn && <button onClick={pass}>Pass</button>}
           Your color is {colorName}. {yourTurn ? "Your" : "Opponent's"} turn.
-
           {!yourTurn && !currentGame.previousMoves.at(-1)?.undone && (
             <button onClick={requestUndo}>Undo</button>
           )}
-
           {yourTurn && `${secondsLeft}s left`}
         </h2>
       )}
@@ -220,6 +227,8 @@ export function App() {
           ></button>
         ))}
       </div>
+
+      <audio src={turnSound} ref={sound} />
     </div>
   );
 }
