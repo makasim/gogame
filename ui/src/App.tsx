@@ -97,6 +97,8 @@ export function App() {
     if (currentGame.currentMove?.playerId === playerId) return;
 
     try {
+      if (!confirm("Request undo?")) return;
+
       await client.undo({
         gameId: currentGame.id,
         gameRev: currentGame.rev,
@@ -161,7 +163,7 @@ export function App() {
       : Color.BLACK;
   const colorName = yourColor === Color.BLACK ? "black" : "white";
 
-  const lastMove = currentGame.previousMoves.at(-1);
+  const lastMove = currentGame.previousMoves.findLast((m) => !m.undone || !m.pass);
 
   return (
     <div className="App">
