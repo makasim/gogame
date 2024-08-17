@@ -156,7 +156,7 @@ export function App() {
         <h2>
           <button onClick={resign}>Resign</button>
           Your color is {colorName}. {yourTurn ? "Your" : "Opponent's"} turn.
-          {!yourTurn && <button onClick={requestUndo}>Undo</button>}
+          {!yourTurn && !currentGame.previousMoves.at(-1)?.undone && <button onClick={requestUndo}>Undo</button>}
         </h2>
       )}
 
