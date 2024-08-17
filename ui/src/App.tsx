@@ -85,6 +85,22 @@ export function App() {
     setCurrentGame(game);
   }
 
+  async function pass() {
+    if (!playerId || !currentGame) return;
+    if (currentGame.state === State.ENDED) return;
+    if (currentGame.currentMove?.playerId !== playerId) return;
+
+    const { game } = await client.pass({
+      gameId: currentGame?.id,
+      gameRev: currentGame?.rev,
+      playerId,
+    });
+
+    if (!game) return alert("Move not made");
+
+    setCurrentGame(game);
+  }
+
   async function resign() {
     if (!playerId || !currentGame) return;
     const { game } = await client.resign({ gameId: currentGame.id, playerId });
@@ -180,11 +196,14 @@ export function App() {
       ) : (
         <h2>
           <button onClick={resign}>Resign</button>
+          {yourTurn && <button onClick={pass}>Pass</button>}
           Your color is {colorName}. {yourTurn ? "Your" : "Opponent's"} turn.
+
           {!yourTurn && !currentGame.previousMoves.at(-1)?.undone && (
             <button onClick={requestUndo}>Undo</button>
           )}
-          {secondsLeft > 0 ? `${secondsLeft}s left` : ""}
+
+          {yourTurn && `${secondsLeft}s left`}
         </h2>
       )}
 
