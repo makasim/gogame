@@ -27,6 +27,7 @@ message Move {
   // current move
   string player_id = 1;
   Color color = 2;
+  int64 end_at = 7;
 
   // make move
   int32 x = 3;
@@ -37,6 +38,7 @@ message Move {
 
   // undone set by server when undo is accepted
   bool undone = 6;
+
 }
 
 message Game {

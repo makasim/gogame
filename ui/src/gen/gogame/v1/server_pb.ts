@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3 } from "@bufbuild/protobuf";
+import { Message, proto3, protoInt64 } from "@bufbuild/protobuf";
 
 /**
  * @generated from enum gogame.v1.Color
@@ -136,6 +136,11 @@ export class Move extends Message<Move> {
   color = Color.UNSPECIFIED;
 
   /**
+   * @generated from field: int64 end_at = 7;
+   */
+  endAt = protoInt64.zero;
+
+  /**
    * make move
    *
    * @generated from field: int32 x = 3;
@@ -171,6 +176,7 @@ export class Move extends Message<Move> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "player_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "color", kind: "enum", T: proto3.getEnumType(Color) },
+    { no: 7, name: "end_at", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 3, name: "x", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 4, name: "y", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 5, name: "pass", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

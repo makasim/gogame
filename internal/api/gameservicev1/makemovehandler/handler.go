@@ -83,6 +83,7 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 	g.CurrentMove = &v1.Move{
 		PlayerId: convertor.NextPlayer(g).Id,
 		Color:    convertor.NextColor(g),
+		EndAt:    time.Now().Add(time.Duration(g.MoveDurationSec) * time.Second).Unix(),
 	}
 	g.Board = convertor.FromClamBoard(b)
 
