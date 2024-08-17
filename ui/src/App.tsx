@@ -149,14 +149,20 @@ export function App() {
       {currentGame.state === State.ENDED ? (
         <h2>
           Game ended.{" "}
-          {currentGame.winner?.id === playerId ? "You won!" : "You lost!"}
+          {currentGame.wonBy === "not_started"
+            ? "Game was cancelled"
+            : currentGame.winner?.id === playerId
+              ? "You won!"
+              : "You lost!"}
           <button onClick={resetGame}>Reset</button>
         </h2>
       ) : (
         <h2>
           <button onClick={resign}>Resign</button>
           Your color is {colorName}. {yourTurn ? "Your" : "Opponent's"} turn.
-          {!yourTurn && !currentGame.previousMoves.at(-1)?.undone && <button onClick={requestUndo}>Undo</button>}
+          {!yourTurn && !currentGame.previousMoves.at(-1)?.undone && (
+            <button onClick={requestUndo}>Undo</button>
+          )}
         </h2>
       )}
 
