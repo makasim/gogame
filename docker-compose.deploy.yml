@@ -4,6 +4,8 @@ services:
   app:
     image: 'registry.makasim.com/gogame:latest'
     working_dir: '/app'
+    environment:
+      - "FLOWSTATESRV_HTTP_HOST=http://flowstatesrv:8181"
     networks:
       - 'external'
       - 'default'

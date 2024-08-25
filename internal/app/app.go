@@ -46,7 +46,12 @@ func New(cfg Config) *App {
 func (a *App) Run(ctx context.Context) error {
 	log.Println("app starting")
 
-	d := srvdriver.New(`http://localhost:8080`)
+	srvAddr := `http://localhost:8080`
+	if os.Getenv(`FLOWSTATESRV_HTTP_HOST`) != `` {
+		srvAddr = os.Getenv(`FLOWSTATESRV_HTTP_HOST`)
+	}
+
+	d := srvdriver.New(srvAddr)
 	//d := memdriver.New()
 	d.SetFlow(createdflow.New())
 	d.SetFlow(moveflow.New())
