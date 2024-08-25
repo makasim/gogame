@@ -1,12 +1,14 @@
 version: '3.7'
 
 services:
-  app2:
+  app:
     image: 'registry.makasim.com/gogame:latest'
     working_dir: '/app'
     networks:
       - 'external'
       - 'default'
+    depends_on:
+      - 'flowstatesrv'
     deploy:
       labels:
         - "traefik.enable=true"
@@ -14,6 +16,9 @@ services:
         - "traefik.frontend.rule=Host:gogame.makasim.com"
         - "traefik.frontend.entryPoints=http,https"
         - "traefik.frontend.redirect.entryPoint=https"
+
+  flowstatesrv:
+    image: 'registry.makasim.com/flowstatesrv:latest'
 
 networks:
   external:

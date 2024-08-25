@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/makasim/flowstate"
-	"github.com/makasim/flowstate/memdriver"
+	"github.com/makasim/flowstatesrv/srvdriver"
 	"github.com/makasim/gogame/internal/api/corsmiddleware"
 	"github.com/makasim/gogame/internal/api/gameservicev1"
 	"github.com/makasim/gogame/internal/api/gameservicev1/creategamehandler"
@@ -46,7 +46,8 @@ func New(cfg Config) *App {
 func (a *App) Run(ctx context.Context) error {
 	log.Println("app starting")
 
-	d := memdriver.New()
+	d := srvdriver.New(`http://localhost:8080`)
+	//d := memdriver.New()
 	d.SetFlow(createdflow.New())
 	d.SetFlow(moveflow.New())
 	d.SetFlow(endedflow.New())
