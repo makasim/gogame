@@ -19,6 +19,8 @@ services:
         - "traefik.frontend.entryPoints=http,https"
         - "traefik.frontend.redirect.entryPoint=https"
 
+
+
   flowstatesrv:
     image: 'registry.makasim.com/flowstatesrv:latest'
     environment:
