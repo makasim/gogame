@@ -24,9 +24,17 @@ services:
     environment:
         - "FLOWSTATESRV_ADDR=0.0.0.0:8282"
     networks:
+      - 'external'
       - 'default'
     ports:
       - '8282:8282'
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.port=8282"
+        - "traefik.frontend.rule=Host:flowstate.makasim.com"
+        - "traefik.frontend.entryPoints=http,https"
+        - "traefik.frontend.redirect.entryPoint=https"
 
 networks:
   external:
