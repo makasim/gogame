@@ -25,6 +25,7 @@ services:
     image: 'registry.makasim.com/flowstatesrv:latest'
     environment:
         - "FLOWSTATESRV_ADDR=0.0.0.0:8282"
+        - "CORS_ENABLED=true"
     networks:
       - 'external'
       - 'default'
