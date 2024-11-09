@@ -1,5 +1,6 @@
 # Go game 
 
+
 The purpose of the repo is to explore and demo potential of [flowstate](https://github.com/makasim/flowstate) library.
 
 For now a player can create a game or find vacant game to join. 
