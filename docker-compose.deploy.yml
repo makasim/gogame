@@ -20,7 +20,7 @@ services:
         - "traefik.frontend.redirect.entryPoint=https"
 
   flowstatesrv:
-    image: 'registry.makasim.com/flowstatesrv:a309c7b6'
+    image: 'registry.makasim.com/flowstatesrv:latest'
     environment:
         - "FLOWSTATESRV_ADDR=0.0.0.0:8282"
         - "CORS_ENABLED=true"
