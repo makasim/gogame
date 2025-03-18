@@ -12,10 +12,10 @@ import (
 )
 
 type Handler struct {
-	e *flowstate.Engine
+	e flowstate.Engine
 }
 
-func New(e *flowstate.Engine) *Handler {
+func New(e flowstate.Engine) *Handler {
 	return &Handler{
 		e: e,
 	}
@@ -27,22 +27,18 @@ func (h *Handler) StreamGameEvents(ctx context.Context, req *connect.Request[v1.
 		return connect.NewError(connect.CodeInternal, err)
 	}
 
-	wCmd := flowstate.Watch(map[string]string{
+	getManyCmd := flowstate.GetManyByLabels(map[string]string{
 		`game.id`: req.Msg.GameId,
 	}).WithORLabels(map[string]string{
 		`undo.game.id`: req.Msg.GameId,
 	}).WithSinceLatest()
 
-	if err := h.e.Do(wCmd); err != nil {
-		return connect.NewError(connect.CodeInternal, err)
-	}
-
-	lis := wCmd.Listener
-	defer lis.Close()
+	w := flowstate.NewWatcher(h.e, getManyCmd)
+	defer w.Close()
 
 	for {
 		select {
-		case state := <-lis.Listen():
+		case state := <-w.Next():
 			if state.Labels[`undo.game.id`] != `` {
 				gID := state.Annotations[`game.id`]
 				gRev, _ := strconv.ParseInt(state.Annotations[`game.rev`], 10, 0)

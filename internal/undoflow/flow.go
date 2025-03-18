@@ -15,6 +15,6 @@ func New() (flowstate.FlowID, *Flow) {
 	return ID, &Flow{}
 }
 
-func (f *Flow) Execute(stateCtx *flowstate.StateCtx, e *flowstate.Engine) (flowstate.Command, error) {
+func (f *Flow) Execute(_ *flowstate.StateCtx, e flowstate.Engine) (flowstate.Command, error) {
 	return nil, fmt.Errorf("a flow should not be executed")
 }

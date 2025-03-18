@@ -40,4 +40,4 @@ tasks:
       - |
         ssh "root@gogame.makasim.com" "mkdir -p /gogame"
         scp "docker-compose.deploy.yml" "root@gogame.makasim.com:/gogame"
-        ssh "root@gogame.makasim.com" "docker stack deploy --with-registry-auth --compose-file /gogame/docker-compose.deploy.yml gogame"
+        ssh "root@gogame.makasim.com" "docker stack deploy --resolve-image=always --with-registry-auth --compose-file /gogame/docker-compose.deploy.yml gogame"

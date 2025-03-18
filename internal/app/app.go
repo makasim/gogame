@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -35,11 +36,13 @@ type Config struct {
 
 type App struct {
 	cfg Config
+	l   *slog.Logger
 }
 
 func New(cfg Config) *App {
 	return &App{
 		cfg: cfg,
+		l:   slog.New(slog.NewJSONHandler(os.Stdout, nil)),
 	}
 }
 
@@ -57,7 +60,7 @@ func (a *App) Run(ctx context.Context) error {
 	d.SetFlow(moveflow.New())
 	d.SetFlow(endedflow.New())
 
-	e, err := flowstate.NewEngine(d)
+	e, err := flowstate.NewEngine(d, a.l)
 	if err != nil {
 		return fmt.Errorf("new engine: %w", err)
 	}

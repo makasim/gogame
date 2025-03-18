@@ -26,7 +26,7 @@ func DataToGame(d *flowstate.Data) (*v1.Game, error) {
 	return g, nil
 }
 
-func FindGame(e *flowstate.Engine, gID string, gRev int32) (*v1.Game, *flowstate.StateCtx, *flowstate.Data, error) {
+func FindGame(e flowstate.Engine, gID string, gRev int32) (*v1.Game, *flowstate.StateCtx, *flowstate.Data, error) {
 	d := &flowstate.Data{}
 	stateCtx := &flowstate.StateCtx{}
 

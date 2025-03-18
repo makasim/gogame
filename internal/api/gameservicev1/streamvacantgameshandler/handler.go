@@ -11,17 +11,17 @@ import (
 )
 
 type Handler struct {
-	e *flowstate.Engine
+	e flowstate.Engine
 }
 
-func New(e *flowstate.Engine) *Handler {
+func New(e flowstate.Engine) *Handler {
 	return &Handler{
 		e: e,
 	}
 }
 
 func (h *Handler) StreamVacantGames(ctx context.Context, _ *connect.Request[v1.StreamVacantGamesRequest], stream *connect.ServerStream[v1.StreamVacantGamesResponse]) error {
-	wCmd := flowstate.Watch(map[string]string{
+	getManyCmd := flowstate.GetManyByLabels(map[string]string{
 		`game.state`: `created`,
 	}).WithORLabels(map[string]string{
 		`game.state`: `started`,
@@ -29,16 +29,12 @@ func (h *Handler) StreamVacantGames(ctx context.Context, _ *connect.Request[v1.S
 		`game.state`: `ended`,
 	}).WithSinceTime(time.Now().Add(-time.Minute * 5))
 
-	if err := h.e.Do(wCmd); err != nil {
-		return connect.NewError(connect.CodeInternal, err)
-	}
-
-	lis := wCmd.Listener
-	defer lis.Close()
+	w := flowstate.NewWatcher(h.e, getManyCmd)
+	defer w.Close()
 
 	for {
 		select {
-		case state := <-lis.Listen():
+		case state := <-w.Next():
 			g, _, _, err := convertor.FindGame(h.e, state.Labels[`game.id`], int32(state.Rev))
 			if err != nil {
 				return connect.NewError(connect.CodeInternal, err)
