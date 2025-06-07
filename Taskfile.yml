@@ -13,31 +13,49 @@ tasks:
         cd ui
         pnpm i
         pnpm build
-        
+
       - |
         go mod tidy && go mod vendor
-        GOOS=linux GOARCH=amd64 go build -o gogame main/main.go
-      - |
-        COMMIT=$(git rev-list -1 HEAD | cut -c1-8)
-        echo "Building gogame:$COMMIT"
-        docker build --platform="linux/amd64" -t "gogame:$COMMIT" .
+        GOOS=linux GOARCH=arm64 go build -o gogame ./main/
+        
+        VERSION="$(git rev-list -1 HEAD | cut -c1-8)"
+        if [ -n "$(git diff)" ]; then
+          VERSION="${VERSION}-$(git diff | sha1sum | awk '{print $1}' | cut -c1-8)"
+        fi
+        if [ -n "$(git diff --cached)" ]; then
+          VERSION="${VERSION}-$(git diff --cached | sha1sum | awk '{print $1}' | cut -c1-8)"
+        fi
+        echo "Building gogmae:$VERSION"
+        docker build --platform="linux/arm64" -t "gogmae:$VERSION" .
     env:
       VITE_API_URL: '{{ default "https://gogame.makasim.com/" .VITE_API_URL }}'
 
   push:
     cmds:
       - |
-        COMMIT=$(git rev-list -1 HEAD | cut -c1-8)
-        docker tag "gogame:$COMMIT" "registry.makasim.com/gogame:$COMMIT"
-        docker tag "gogame:$COMMIT" "registry.makasim.com/gogame:latest"
-        echo "Pushing registry.makasim.com/gogame:$COMMIT"
-        docker push "registry.makasim.com/gogame:$COMMIT"
-        echo "Pushing registry.makasim.com/gogame:latest"
-        docker push "registry.makasim.com/gogame:latest"
+        VERSION="$(git rev-list -1 HEAD | cut -c1-8)"
+        if [ -n "$(git diff)" ]; then
+          VERSION="${VERSION}-$(git diff | sha1sum | awk '{print $1}' | cut -c1-8)"
+        fi
+        if [ -n "$(git diff --cached)" ]; then
+          VERSION="${VERSION}-$(git diff --cached | sha1sum | awk '{print $1}' | cut -c1-8)"
+        fi
+        
+        docker tag "gogmae:$VERSION" "registry2.makasim.com/gogame:$VERSION"
+        echo "Pushing registry2.makasim.com/gogame:$VERSION"
+        docker push "registry2.makasim.com/gogame:$VERSION"
 
   deploy:
     cmds:
       - |
-        ssh "root@gogame.makasim.com" "mkdir -p /gogame"
-        scp "docker-compose.deploy.yml" "root@gogame.makasim.com:/gogame"
-        ssh "root@gogame.makasim.com" "docker stack deploy --resolve-image=always --with-registry-auth --compose-file /gogame/docker-compose.deploy.yml gogame"
+        VERSION="$(git rev-list -1 HEAD | cut -c1-8)"
+        if [ -n "$(git diff)" ]; then
+          VERSION="${VERSION}-$(git diff | sha1sum | awk '{print $1}' | cut -c1-8)"
+        fi
+        if [ -n "$(git diff --cached)" ]; then
+        VERSION="${VERSION}-$(git diff --cached | sha1sum | awk '{print $1}' | cut -c1-8)"
+        fi
+        cp "deployment.yaml" "deployment.tmp.yaml"
+        env VERSION="$VERSION" envsubst < "deployment.yaml" > "deployment.tmp.yaml"
+        
+        kubectl -n gogame apply -f "deployment.tmp.yaml"

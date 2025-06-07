@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gogame
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flowstatesrv
+  namespace: gogame
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flowstatesrv
+  template:
+    metadata:
+      labels:
+        app: flowstatesrv
+    spec:
+      containers:
+        - name: flowstatesrv
+          image: registry2.makasim.com/flowstatesrv:510013c9-e48df3f4
+          ports:
+            - containerPort: 9282
+          env:
+            - name: FLOWSTATESRV_ADDR
+              value: "0.0.0.0:9282"
+            - name: CORS_ENABLED
+              value: "true"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flowstatesrv
+  namespace: gogame
+spec:
+  selector:
+    app: flowstatesrv
+  ports:
+    - protocol: TCP
+      port: 9282
+      targetPort: 9282
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flowstatesrv-ingress
+  namespace: gogame
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: http,https
+    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+    traefik.ingress.kubernetes.io/redirect-entry-point: https
+spec:
+  rules:
+    - host: flowstate.makasim.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name:  flowstatesrv
+                port:
+                  number: 9282
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gogame
+  namespace: gogame
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gogame
+  template:
+    metadata:
+      labels:
+        app: gogame
+    spec:
+      containers:
+        - name: gogame
+          image: registry2.makasim.com/gogame:${VERSION}
+          ports:
+            - containerPort: 8181
+          env:
+            - name: FLOWSTATESRV_HTTP_HOST
+              value: "http://flowstatesrv.gogame.svc:9282"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gogame
+  namespace: gogame
+spec:
+  selector:
+    app: gogame
+  ports:
+    - protocol: TCP
+      port: 8181
+      targetPort: 8181
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flowstatesrv-ingress
+  namespace: gogame
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: http,https
+    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+    traefik.ingress.kubernetes.io/redirect-entry-point: https
+spec:
+  rules:
+    - host: gogame.makasim.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name:  gogame
+                port:
+                  number: 8181

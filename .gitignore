@@ -3,3 +3,5 @@
 /ui/node_modules
 /ui/.pnpm-store
 /ul/.DS_Store
+/deployment.tmp.yaml
+/gogame
