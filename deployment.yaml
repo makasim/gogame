@@ -48,9 +48,9 @@ metadata:
   name: flowstatesrv-ingress
   namespace: gogame
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: http,https
+    traefik.ingress.kubernetes.io/router.entrypoints: public,publicsecure
     traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
-    traefik.ingress.kubernetes.io/redirect-entry-point: https
+    traefik.ingress.kubernetes.io/redirect-entry-point: publicsecure
 spec:
   rules:
     - host: flowstate-gogame.makasim.com
@@ -107,9 +107,9 @@ metadata:
   name: gogame-ingress
   namespace: gogame
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: http,https
+    traefik.ingress.kubernetes.io/router.entrypoints: public,publicsecure
     traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
-    traefik.ingress.kubernetes.io/redirect-entry-point: https
+    traefik.ingress.kubernetes.io/redirect-entry-point: publicsecure
 spec:
   rules:
     - host: gogame.makasim.com
