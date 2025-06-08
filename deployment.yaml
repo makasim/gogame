@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: flowstatesrv
-          image: registry2.makasim.com/flowstatesrv:14400ac2
+          image: registry2.makasim.com/flowstatesrv:edf8e244
           ports:
             - containerPort: 9282
           env:
