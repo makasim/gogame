@@ -50,7 +50,7 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	if stateCtx.Current.Transition.ToID != moveflow.ID {
+	if stateCtx.Current.Transition.To != moveflow.ID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("state is not move"))
 	}
 	if g.CurrentMove.PlayerId != req.Msg.Move.PlayerId {

@@ -38,7 +38,7 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	if stateCtx.Current.Transition.ToID != createdflow.ID {
+	if stateCtx.Current.Transition.To != createdflow.ID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game is not joinable"))
 	}
 	if g.Player1.Id == req.Msg.Player2.Id {

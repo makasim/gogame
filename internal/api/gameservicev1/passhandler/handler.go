@@ -39,7 +39,7 @@ func (h *Handler) Pass(_ context.Context, req *connect.Request[v1.PassRequest]) 
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	if stateCtx.Current.Transition.ToID != moveflow.ID {
+	if stateCtx.Current.Transition.To != moveflow.ID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("state is not move"))
 	}
 	if g.CurrentMove.PlayerId != req.Msg.PlayerId {

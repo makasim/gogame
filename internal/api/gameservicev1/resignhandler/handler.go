@@ -34,7 +34,7 @@ func (h *Handler) Resign(_ context.Context, req *connect.Request[v1.ResignReques
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	if stateCtx.Current.Transition.ToID == endedflow.ID {
+	if stateCtx.Current.Transition.To == endedflow.ID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game has already ended"))
 	}
 

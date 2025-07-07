@@ -1,7 +1,6 @@
 package createdflow
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/makasim/flowstate"
@@ -49,7 +48,7 @@ func (f *Flow) Execute(stateCtx *flowstate.StateCtx, e flowstate.Engine) (flowst
 			flowstate.StoreData(d),
 			flowstate.ReferenceData(stateCtx, d, `game`),
 			flowstate.Pause(stateCtx).WithTransit(endedflow.ID),
-		)); err != nil && errors.Is(err, flowstate.ErrCommitConflict{}) {
+		)); flowstate.IsErrRevMismatch(err) {
 			return flowstate.Noop(stateCtx), nil
 		} else if err != nil {
 			return nil, err

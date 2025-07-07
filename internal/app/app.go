@@ -10,8 +10,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/dgraph-io/badger/v4"
 	"github.com/makasim/flowstate"
-	"github.com/makasim/flowstatesrv/srvdriver"
+	"github.com/makasim/flowstate/badgerdriver"
 	"github.com/makasim/gogame/internal/api/corsmiddleware"
 	"github.com/makasim/gogame/internal/api/gameservicev1"
 	"github.com/makasim/gogame/internal/api/gameservicev1/creategamehandler"
@@ -49,20 +50,33 @@ func New(cfg Config) *App {
 func (a *App) Run(ctx context.Context) error {
 	log.Println("app starting")
 
-	srvAddr := `http://localhost:8080`
-	if os.Getenv(`FLOWSTATESRV_HTTP_HOST`) != `` {
-		srvAddr = os.Getenv(`FLOWSTATESRV_HTTP_HOST`)
+	db, err := badger.Open(badger.DefaultOptions("badgerdb").WithLoggingLevel(2))
+	if err != nil {
+		return fmt.Errorf("badger: open: %w", err)
 	}
 
-	d := srvdriver.New(srvAddr)
-	//d := memdriver.New()
-	d.SetFlow(createdflow.New())
-	d.SetFlow(moveflow.New())
-	d.SetFlow(endedflow.New())
+	d, err := badgerdriver.New(db)
+	if err != nil {
+		return fmt.Errorf("badgerdriver: new: %w", err)
+	}
+
+	_ = d.SetFlow(createdflow.New())
+	_ = d.SetFlow(moveflow.New())
+	_ = d.SetFlow(endedflow.New())
 
 	e, err := flowstate.NewEngine(d, a.l)
 	if err != nil {
 		return fmt.Errorf("new engine: %w", err)
+	}
+
+	r, err := flowstate.NewRecoverer(e, a.l)
+	if err != nil {
+		return fmt.Errorf("recoverer: new: %w", err)
+	}
+
+	dlr, err := flowstate.NewDelayer(e, a.l)
+	if err != nil {
+		return fmt.Errorf("delayer: new: %w", err)
 	}
 
 	corsMW := corsmiddleware.New(os.Getenv(`CORS_ENABLED`) == `true`)
@@ -103,6 +117,14 @@ func (a *App) Run(ctx context.Context) error {
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		shutdownRes = errors.Join(shutdownRes, fmt.Errorf("http server: shutdown: %w", err))
+	}
+
+	if err := r.Shutdown(shutdownCtx); err != nil {
+		shutdownRes = errors.Join(shutdownRes, fmt.Errorf("recoverer: shutdown: %w", err))
+	}
+
+	if err := dlr.Shutdown(shutdownCtx); err != nil {
+		shutdownRes = errors.Join(shutdownRes, fmt.Errorf("delayer: shutdown: %w", err))
 	}
 
 	if err := e.Shutdown(shutdownCtx); err != nil {

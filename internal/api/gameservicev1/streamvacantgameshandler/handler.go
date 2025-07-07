@@ -21,7 +21,7 @@ func New(e flowstate.Engine) *Handler {
 }
 
 func (h *Handler) StreamVacantGames(ctx context.Context, _ *connect.Request[v1.StreamVacantGamesRequest], stream *connect.ServerStream[v1.StreamVacantGamesResponse]) error {
-	getManyCmd := flowstate.GetManyByLabels(map[string]string{
+	getManyCmd := flowstate.GetStatesByLabels(map[string]string{
 		`game.state`: `created`,
 	}).WithORLabels(map[string]string{
 		`game.state`: `started`,

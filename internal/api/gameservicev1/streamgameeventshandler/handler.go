@@ -27,7 +27,7 @@ func (h *Handler) StreamGameEvents(ctx context.Context, req *connect.Request[v1.
 		return connect.NewError(connect.CodeInternal, err)
 	}
 
-	getManyCmd := flowstate.GetManyByLabels(map[string]string{
+	getManyCmd := flowstate.GetStatesByLabels(map[string]string{
 		`game.id`: req.Msg.GameId,
 	}).WithORLabels(map[string]string{
 		`undo.game.id`: req.Msg.GameId,
@@ -49,7 +49,7 @@ func (h *Handler) StreamGameEvents(ctx context.Context, req *connect.Request[v1.
 				undoStateCtx := state.CopyToCtx(&flowstate.StateCtx{})
 				undoD := &flowstate.Data{}
 				if err := h.e.Do(
-					flowstate.GetByID(stateCtx, flowstate.StateID(gID), gRev),
+					flowstate.GetStateByID(stateCtx, flowstate.StateID(gID), gRev),
 					flowstate.DereferenceData(stateCtx, d, `game`),
 					flowstate.GetData(d),
 					flowstate.DereferenceData(undoStateCtx, undoD, `undo`),

@@ -96,7 +96,7 @@ func (h *Handler) Undo(_ context.Context, req *connect.Request[v1.UndoRequest]) 
 		undoD := &flowstate.Data{}
 		undoStateCtx := &flowstate.StateCtx{}
 		if err := h.e.Do(
-			flowstate.GetByID(undoStateCtx, flowstate.StateID(fmt.Sprintf(`undo-%s-%d`, g.Id, g.Rev)), 0),
+			flowstate.GetStateByID(undoStateCtx, flowstate.StateID(fmt.Sprintf(`undo-%s-%d`, g.Id, g.Rev)), 0),
 			flowstate.DereferenceData(undoStateCtx, undoD, `undo`),
 			flowstate.GetData(undoD),
 		); err != nil {

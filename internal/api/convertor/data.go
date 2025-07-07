@@ -31,7 +31,7 @@ func FindGame(e flowstate.Engine, gID string, gRev int32) (*v1.Game, *flowstate.
 	stateCtx := &flowstate.StateCtx{}
 
 	if err := e.Do(
-		flowstate.GetByID(stateCtx, flowstate.StateID(gID), int64(gRev)),
+		flowstate.GetStateByID(stateCtx, flowstate.StateID(gID), int64(gRev)),
 		flowstate.DereferenceData(stateCtx, d, `game`),
 		flowstate.GetData(d),
 	); err != nil {
