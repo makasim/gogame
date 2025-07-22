@@ -65,8 +65,7 @@ func (h *Handler) Pass(_ context.Context, req *connect.Request[v1.PassRequest]) 
 		}
 
 		if err := h.e.Do(flowstate.Commit(
-			flowstate.StoreData(d),
-			flowstate.ReferenceData(stateCtx, d, `game`),
+			flowstate.AttachData(stateCtx, d, `game`),
 			flowstate.Pause(stateCtx).WithTransit(endedflow.ID),
 		)); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
@@ -92,8 +91,7 @@ func (h *Handler) Pass(_ context.Context, req *connect.Request[v1.PassRequest]) 
 	}
 
 	if err := h.e.Do(flowstate.Commit(
-		flowstate.StoreData(d),
-		flowstate.ReferenceData(stateCtx, d, `game`),
+		flowstate.AttachData(stateCtx, d, `game`),
 		flowstate.Pause(stateCtx).WithTransit(moveflow.ID),
 		flowstate.Delay(stateCtx, time.Duration(g.MoveDurationSec)*time.Second).WithCommit(true),
 	)); err != nil {

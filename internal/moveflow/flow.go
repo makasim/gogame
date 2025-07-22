@@ -9,12 +9,12 @@ import (
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
 )
 
-var ID flowstate.FlowID = `move`
+var ID flowstate.TransitionID = `move`
 
 type Flow struct {
 }
 
-func New() (flowstate.FlowID, *Flow) {
+func New() (flowstate.TransitionID, *Flow) {
 	return ID, &Flow{}
 }
 
@@ -23,8 +23,7 @@ func (f *Flow) Execute(stateCtx *flowstate.StateCtx, e flowstate.Engine) (flowst
 		d := &flowstate.Data{}
 
 		if err := e.Do(
-			flowstate.DereferenceData(stateCtx, d, `game`),
-			flowstate.GetData(d),
+			flowstate.GetData(stateCtx, d, `game`),
 		); err != nil {
 			return nil, err
 		}
@@ -46,8 +45,7 @@ func (f *Flow) Execute(stateCtx *flowstate.StateCtx, e flowstate.Engine) (flowst
 		}
 
 		if err := e.Do(flowstate.Commit(
-			flowstate.StoreData(d),
-			flowstate.ReferenceData(stateCtx, d, `game`),
+			flowstate.AttachData(stateCtx, d, `game`),
 			flowstate.Pause(stateCtx).WithTransit(endedflow.ID),
 		)); flowstate.IsErrRevMismatch(err) {
 			return flowstate.Noop(stateCtx), nil

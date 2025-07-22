@@ -10,9 +10,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/dgraph-io/badger/v4"
 	"github.com/makasim/flowstate"
-	"github.com/makasim/flowstate/badgerdriver"
+	"github.com/makasim/flowstate/netdriver"
+	"github.com/makasim/flowstate/netflow"
 	"github.com/makasim/gogame/internal/api/corsmiddleware"
 	"github.com/makasim/gogame/internal/api/gameservicev1"
 	"github.com/makasim/gogame/internal/api/gameservicev1/creategamehandler"
@@ -50,36 +50,42 @@ func New(cfg Config) *App {
 func (a *App) Run(ctx context.Context) error {
 	log.Println("app starting")
 
-	db, err := badger.Open(badger.DefaultOptions("badgerdb").WithLoggingLevel(2))
-	if err != nil {
-		return fmt.Errorf("badger: open: %w", err)
+	flowstateHttpHost := os.Getenv("FLOWSTATE_HTTP_HOST")
+	if flowstateHttpHost == "" {
+		flowstateHttpHost = "http://localhost:8080"
 	}
 
-	d, err := badgerdriver.New(db)
-	if err != nil {
-		return fmt.Errorf("badgerdriver: new: %w", err)
+	a.l.Info("connecting to flowstate at: " + flowstateHttpHost)
+
+	d := netdriver.New(flowstateHttpHost)
+
+	httpHost := os.Getenv("HTTP_HOST")
+	if httpHost == "" {
+		httpHost = "http://localhost:8181"
 	}
 
-	_ = d.SetFlow(createdflow.New())
-	_ = d.SetFlow(moveflow.New())
-	_ = d.SetFlow(endedflow.New())
+	a.l.Info("flow execute server at: " + httpHost)
 
-	e, err := flowstate.NewEngine(d, a.l)
+	fr := netflow.NewRegistry(httpHost, d, a.l)
+	defer fr.Close()
+
+	if err := fr.SetFlow(createdflow.New()); err != nil {
+		return fmt.Errorf("set flow created: %w", err)
+	}
+	if err := fr.SetFlow(moveflow.New()); err != nil {
+		return fmt.Errorf("set flow move: %w", err)
+	}
+	if err := fr.SetFlow(endedflow.New()); err != nil {
+		return fmt.Errorf("set flow ended: %w", err)
+	}
+
+	e, err := flowstate.NewEngine(d, fr, a.l)
 	if err != nil {
 		return fmt.Errorf("new engine: %w", err)
 	}
 
-	r, err := flowstate.NewRecoverer(e, a.l)
-	if err != nil {
-		return fmt.Errorf("recoverer: new: %w", err)
-	}
-
-	dlr, err := flowstate.NewDelayer(e, a.l)
-	if err != nil {
-		return fmt.Errorf("delayer: new: %w", err)
-	}
-
-	corsMW := corsmiddleware.New(os.Getenv(`CORS_ENABLED`) == `true`)
+	corsEnv := os.Getenv(`CORS_ENABLED`)
+	corsMW := corsmiddleware.New(corsEnv == `true` || corsEnv == ``)
 
 	mux := http.NewServeMux()
 	mux.Handle(corsMW.WrapPath(gogamev1connect.NewGameServiceHandler(gameservicev1.New(
@@ -96,8 +102,14 @@ func (a *App) Run(ctx context.Context) error {
 	mux.Handle("/", corsMW.Wrap(http.FileServerFS(ui.PublicFS())))
 
 	srv := &http.Server{
-		Addr:    `0.0.0.0:8181`,
-		Handler: h2c.NewHandler(mux, &http2.Server{}),
+		Addr: `0.0.0.0:8181`,
+		Handler: h2c.NewHandler(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			if netflow.HandleExecute(rw, r, e) {
+				return
+			}
+
+			mux.ServeHTTP(rw, r)
+		}), &http2.Server{}),
 	}
 
 	go func() {
@@ -118,15 +130,6 @@ func (a *App) Run(ctx context.Context) error {
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		shutdownRes = errors.Join(shutdownRes, fmt.Errorf("http server: shutdown: %w", err))
 	}
-
-	if err := r.Shutdown(shutdownCtx); err != nil {
-		shutdownRes = errors.Join(shutdownRes, fmt.Errorf("recoverer: shutdown: %w", err))
-	}
-
-	if err := dlr.Shutdown(shutdownCtx); err != nil {
-		shutdownRes = errors.Join(shutdownRes, fmt.Errorf("delayer: shutdown: %w", err))
-	}
-
 	if err := e.Shutdown(shutdownCtx); err != nil {
 		shutdownRes = errors.Join(shutdownRes, fmt.Errorf("engine: shutdown: %w", err))
 	}

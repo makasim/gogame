@@ -6,12 +6,12 @@ import (
 	"github.com/makasim/flowstate"
 )
 
-var ID flowstate.FlowID = `undo`
+var ID flowstate.TransitionID = `undo`
 
 type Flow struct {
 }
 
-func New() (flowstate.FlowID, *Flow) {
+func New() (flowstate.TransitionID, *Flow) {
 	return ID, &Flow{}
 }
 

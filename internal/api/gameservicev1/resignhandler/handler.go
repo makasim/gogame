@@ -48,8 +48,7 @@ func (h *Handler) Resign(_ context.Context, req *connect.Request[v1.ResignReques
 	}
 
 	if err := h.e.Do(flowstate.Commit(
-		flowstate.StoreData(d),
-		flowstate.ReferenceData(stateCtx, d, `game`),
+		flowstate.AttachData(stateCtx, d, `game`),
 		flowstate.Pause(stateCtx).WithTransit(endedflow.ID),
 	)); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

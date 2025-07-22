@@ -75,8 +75,7 @@ func (h *Handler) Undo(_ context.Context, req *connect.Request[v1.UndoRequest]) 
 		}
 
 		if err := h.e.Do(flowstate.Commit(
-			flowstate.StoreData(undoD),
-			flowstate.ReferenceData(undoStateCtx, undoD, `undo`),
+			flowstate.AttachData(undoStateCtx, undoD, `undo`),
 			flowstate.Pause(undoStateCtx).WithTransit(undoflow.ID),
 		)); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
@@ -97,8 +96,7 @@ func (h *Handler) Undo(_ context.Context, req *connect.Request[v1.UndoRequest]) 
 		undoStateCtx := &flowstate.StateCtx{}
 		if err := h.e.Do(
 			flowstate.GetStateByID(undoStateCtx, flowstate.StateID(fmt.Sprintf(`undo-%s-%d`, g.Id, g.Rev)), 0),
-			flowstate.DereferenceData(undoStateCtx, undoD, `undo`),
-			flowstate.GetData(undoD),
+			flowstate.GetData(undoStateCtx, undoD, `undo`),
 		); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
@@ -122,8 +120,7 @@ func (h *Handler) Undo(_ context.Context, req *connect.Request[v1.UndoRequest]) 
 
 		if !undo.Accepted {
 			if err := h.e.Do(flowstate.Commit(
-				flowstate.StoreData(undoD),
-				flowstate.ReferenceData(undoStateCtx, undoD, `undo`),
+				flowstate.AttachData(undoStateCtx, undoD, `undo`),
 				flowstate.Pause(undoStateCtx).WithTransit(undoflow.ID),
 			)); err != nil {
 				return nil, connect.NewError(connect.CodeInternal, err)
@@ -152,10 +149,8 @@ func (h *Handler) Undo(_ context.Context, req *connect.Request[v1.UndoRequest]) 
 		}
 
 		if err := h.e.Do(flowstate.Commit(
-			flowstate.StoreData(undoD),
-			flowstate.StoreData(d),
-			flowstate.ReferenceData(undoStateCtx, undoD, `undo`),
-			flowstate.ReferenceData(stateCtx, d, `game`),
+			flowstate.AttachData(undoStateCtx, undoD, `undo`),
+			flowstate.AttachData(stateCtx, d, `game`),
 			flowstate.Pause(undoStateCtx).WithTransit(undoflow.ID),
 			flowstate.Pause(stateCtx).WithTransit(moveflow.ID),
 		)); err != nil {

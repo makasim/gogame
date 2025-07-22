@@ -58,8 +58,7 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 	}
 
 	if err := h.e.Do(flowstate.Commit(
-		flowstate.StoreData(d),
-		flowstate.ReferenceData(stateCtx, d, `game`),
+		flowstate.AttachData(stateCtx, d, `game`),
 		flowstate.Pause(stateCtx).WithTransit(moveflow.ID),
 		flowstate.Delay(stateCtx, time.Duration(g.MoveDurationSec)*time.Second).WithCommit(true),
 	)); err != nil {
