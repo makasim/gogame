@@ -30,67 +30,78 @@ spec:
     requests:
       storage: 1Gi
   volumeName: gogame-pv
-#---
-#apiVersion: apps/v1
-#kind: Deployment
-#metadata:
-#  name: flowstatesrv
-#  namespace: gogame
-#spec:
-#  replicas: 1
-#  selector:
-#    matchLabels:
-#      app: flowstatesrv
-#  template:
-#    metadata:
-#      labels:
-#        app: flowstatesrv
-#    spec:
-#      containers:
-#        - name: flowstatesrv
-#          image: registry2.makasim.com/flowstatesrv:edf8e244
-#          ports:
-#            - containerPort: 9282
-#          env:
-#            - name: FLOWSTATESRV_ADDR
-#              value: "0.0.0.0:9282"
-#            - name: CORS_ENABLED
-#              value: "true"
-#---
-#apiVersion: v1
-#kind: Service
-#metadata:
-#  name: flowstatesrv
-#  namespace: gogame
-#spec:
-#  selector:
-#    app: flowstatesrv
-#  ports:
-#    - protocol: TCP
-#      port: 9282
-#      targetPort: 9282
-#---
-#apiVersion: networking.k8s.io/v1
-#kind: Ingress
-#metadata:
-#  name: flowstatesrv-ingress
-#  namespace: gogame
-#  annotations:
-#    traefik.ingress.kubernetes.io/router.entrypoints: public,publicsecure
-#    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
-#    traefik.ingress.kubernetes.io/redirect-entry-point: publicsecure
-#spec:
-#  rules:
-#    - host: flowstate-gogame.makasim.com
-#      http:
-#        paths:
-#          - path: /
-#            pathType: Prefix
-#            backend:
-#              service:
-#                name:  flowstatesrv
-#                port:
-#                  number: 9282
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flowstatesrv
+  namespace: gogame
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flowstatesrv
+  template:
+    metadata:
+      labels:
+        app: flowstatesrv
+    spec:
+      containers:
+        - name: flowstatesrv
+          image: registry2.makasim.com/flowstatesrv:6bca95ee
+          ports:
+            - containerPort: 9282
+          env:
+            - name: FLOWSTATESRV_ADDR
+              value: "0.0.0.0:9282"
+            - name: CORS_ENABLED
+              value: "true"
+            - name: FLOWSTATESRV_DRIVER
+              value: "badgerdb"
+            - name: FLOWSTATESRV_BADGERDRIVER_PATH
+              value: ""
+          volumeMounts:
+            - name: badgerdb-volume
+              mountPath: /badgerdb
+      volumes:
+        - name: badgerdb-volume
+          persistentVolumeClaim:
+            claimName: gogame-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flowstatesrv
+  namespace: gogame
+spec:
+  selector:
+    app: flowstatesrv
+  ports:
+    - protocol: TCP
+      port: 9282
+      targetPort: 9282
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flowstatesrv-ingress
+  namespace: gogame
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: public,publicsecure
+    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+    traefik.ingress.kubernetes.io/redirect-entry-point: publicsecure
+spec:
+  rules:
+    - host: flowstate-gogame.makasim.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name:  flowstatesrv
+                port:
+                  number: 9282
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -112,16 +123,13 @@ spec:
           image: registry2.makasim.com/gogame:${VERSION}
           ports:
             - containerPort: 8181
-#          env:
-#            - name: FLOWSTATESRV_HTTP_HOST
-#              value: "http://flowstatesrv.gogame.svc:9282"
-          volumeMounts:
-            - name: badgerdb-volume
-              mountPath: /badgerdb
-      volumes:
-        - name: badgerdb-volume
-          persistentVolumeClaim:
-            claimName: gogame-pvc
+          env:
+            - name: FLOWSTATESRV_HTTP_HOST
+              value: "http://flowstatesrv.gogame.svc:9282"
+            - name: CORS_ENABLED
+              value: "true"
+            - name: HTTP_HOST
+              value: "http://gogame.gogame.svc:8181"
 ---
 apiVersion: v1
 kind: Service
