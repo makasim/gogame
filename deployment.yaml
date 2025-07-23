@@ -57,9 +57,9 @@ spec:
             - name: CORS_ENABLED
               value: "true"
             - name: FLOWSTATESRV_DRIVER
-              value: "badgerdb"
+              value: "badgerdriver"
             - name: FLOWSTATESRV_BADGERDRIVER_PATH
-              value: ""
+              value: "/badgerdb"
           volumeMounts:
             - name: badgerdb-volume
               mountPath: /badgerdb
