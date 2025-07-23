@@ -124,7 +124,7 @@ spec:
           ports:
             - containerPort: 8181
           env:
-            - name: FLOWSTATESRV_HTTP_HOST
+            - name: FLOWSTATE_HTTP_HOST
               value: "http://flowstatesrv.gogame.svc:9282"
             - name: CORS_ENABLED
               value: "true"
