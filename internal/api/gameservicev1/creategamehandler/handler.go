@@ -10,6 +10,7 @@ import (
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
 	"github.com/makasim/gogame/internal/createdflow"
+	"github.com/makasim/gogame/internal/staleflow"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
 )
 
@@ -61,7 +62,7 @@ func (h *Handler) CreateGame(_ context.Context, req *connect.Request[v1.CreateGa
 	if err := h.e.Do(flowstate.Commit(
 		flowstate.AttachData(stateCtx, d, `game`),
 		flowstate.Pause(stateCtx).WithTransit(createdflow.ID),
-		flowstate.Delay(stateCtx, time.Minute).WithCommit(true),
+		flowstate.Delay(stateCtx, time.Minute).WithCommit(true).WithTransit(staleflow.ID),
 	)); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

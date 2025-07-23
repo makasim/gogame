@@ -26,6 +26,7 @@ import (
 	"github.com/makasim/gogame/internal/createdflow"
 	"github.com/makasim/gogame/internal/endedflow"
 	"github.com/makasim/gogame/internal/moveflow"
+	"github.com/makasim/gogame/internal/staleflow"
 	"github.com/makasim/gogame/protogen/gogame/v1/gogamev1connect"
 	"github.com/makasim/gogame/ui"
 	"golang.org/x/net/http2"
@@ -77,6 +78,9 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	if err := fr.SetFlow(endedflow.New()); err != nil {
 		return fmt.Errorf("set flow ended: %w", err)
+	}
+	if err := fr.SetFlow(staleflow.New()); err != nil {
+		return fmt.Errorf("set flow stale: %w", err)
 	}
 
 	e, err := flowstate.NewEngine(d, fr, a.l)
