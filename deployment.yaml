@@ -48,17 +48,17 @@ spec:
     spec:
       containers:
         - name: flowstatesrv
-          image: registry2.makasim.com/flowstatesrv:6bca95ee
+          image: docker.io/makasim/flowstate:e662c53f
           ports:
             - containerPort: 9282
           env:
-            - name: FLOWSTATESRV_ADDR
+            - name: FLOWSTATE_ADDR
               value: "0.0.0.0:9282"
             - name: CORS_ENABLED
               value: "true"
-            - name: FLOWSTATESRV_DRIVER
+            - name: FLOWSTATE_DRIVER
               value: "badgerdriver"
-            - name: FLOWSTATESRV_BADGERDRIVER_PATH
+            - name: FLOWSTATE_BADGERDRIVER_PATH
               value: "/badgerdb"
           volumeMounts:
             - name: badgerdb-volume
