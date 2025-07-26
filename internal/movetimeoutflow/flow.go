@@ -16,13 +16,13 @@ func New() (flowstate.FlowID, *Flow) {
 }
 
 func (f *Flow) Execute(stateCtx *flowstate.StateCtx, e flowstate.Engine) (flowstate.Command, error) {
-	d := &flowstate.Data{}
-
 	if err := e.Do(
-		flowstate.GetData(stateCtx, d, `game`),
+		flowstate.GetData(stateCtx, `game`),
 	); err != nil {
 		return nil, err
 	}
+
+	d := stateCtx.MustData(`game`)
 
 	g, err := convertor.DataToGame(d)
 	if err != nil {
@@ -41,7 +41,7 @@ func (f *Flow) Execute(stateCtx *flowstate.StateCtx, e flowstate.Engine) (flowst
 	}
 
 	return flowstate.Commit(
-		flowstate.AttachData(stateCtx, d, `game`),
+		flowstate.StoreData(stateCtx, `game`),
 		flowstate.Park(stateCtx),
 	), nil
 }

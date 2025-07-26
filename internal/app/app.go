@@ -13,20 +13,21 @@ import (
 	"github.com/makasim/flowstate"
 	"github.com/makasim/flowstate/netdriver"
 	"github.com/makasim/flowstate/netflow"
-	"github.com/makasim/gogame/internal/api/corsmiddleware"
+	"github.com/makasim/gogame/internal/api"
 	"github.com/makasim/gogame/internal/api/gameservicev1"
-	"github.com/makasim/gogame/internal/api/gameservicev1/creategamehandler"
-	"github.com/makasim/gogame/internal/api/gameservicev1/joingamehandler"
-	"github.com/makasim/gogame/internal/api/gameservicev1/makemovehandler"
-	"github.com/makasim/gogame/internal/api/gameservicev1/passhandler"
-	"github.com/makasim/gogame/internal/api/gameservicev1/resignhandler"
 	"github.com/makasim/gogame/internal/api/gameservicev1/streamgameeventshandler"
 	"github.com/makasim/gogame/internal/api/gameservicev1/streamvacantgameshandler"
-	"github.com/makasim/gogame/internal/api/gameservicev1/undohandler"
+	"github.com/makasim/gogame/internal/creategameflow"
+	"github.com/makasim/gogame/internal/joingameflow"
+	"github.com/makasim/gogame/internal/makemoveflow"
 	"github.com/makasim/gogame/internal/movetimeoutflow"
+	"github.com/makasim/gogame/internal/passflow"
+	"github.com/makasim/gogame/internal/resignflow"
 	"github.com/makasim/gogame/internal/staleflow"
+	"github.com/makasim/gogame/internal/undoflow"
 	"github.com/makasim/gogame/protogen/gogame/v1/gogamev1connect"
 	"github.com/makasim/gogame/ui"
+	"github.com/rs/cors"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
@@ -68,6 +69,24 @@ func (a *App) Run(ctx context.Context) error {
 	fr := netflow.NewRegistry(httpHost, d, a.l)
 	defer fr.Close()
 
+	if err := fr.SetFlow(creategameflow.New()); err != nil {
+		return fmt.Errorf("flow registry: set flow: creategameflow: %w", err)
+	}
+	if err := fr.SetFlow(joingameflow.New()); err != nil {
+		return fmt.Errorf("flow registry: set flow: joingameflow: %w", err)
+	}
+	if err := fr.SetFlow(makemoveflow.New()); err != nil {
+		return fmt.Errorf("flow registry: set flow: makemoveflow: %w", err)
+	}
+	if err := fr.SetFlow(resignflow.New()); err != nil {
+		return fmt.Errorf("flow registry: set flow: resignflow: %w", err)
+	}
+	if err := fr.SetFlow(passflow.New()); err != nil {
+		return fmt.Errorf("flow registry: set flow: passflow: %w", err)
+	}
+	if err := fr.SetFlow(undoflow.New()); err != nil {
+		return fmt.Errorf("flow registry: set flow: undoflow: %w", err)
+	}
 	if err := fr.SetFlow(movetimeoutflow.New()); err != nil {
 		return fmt.Errorf("set flow move: %w", err)
 	}
@@ -80,32 +99,26 @@ func (a *App) Run(ctx context.Context) error {
 		return fmt.Errorf("new engine: %w", err)
 	}
 
-	corsEnv := os.Getenv(`CORS_ENABLED`)
-	corsMW := corsmiddleware.New(corsEnv == `true` || corsEnv == ``)
-
 	mux := http.NewServeMux()
-	mux.Handle(corsMW.WrapPath(gogamev1connect.NewGameServiceHandler(gameservicev1.New(
-		creategamehandler.New(e),
-		joingamehandler.New(e),
+	mux.Handle(gogamev1connect.NewGameServiceHandler(gameservicev1.New(
 		streamvacantgameshandler.New(e),
 		streamgameeventshandler.New(e),
-		makemovehandler.New(e),
-		resignhandler.New(e),
-		passhandler.New(e),
-		undohandler.New(e),
-	))))
+	)))
 
-	mux.Handle("/", corsMW.Wrap(http.FileServerFS(ui.PublicFS())))
+	mux.Handle("/", http.FileServerFS(ui.PublicFS()))
 
 	srv := &http.Server{
 		Addr: `0.0.0.0:8181`,
-		Handler: h2c.NewHandler(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		Handler: h2c.NewHandler(handleCORS(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			if netflow.HandleExecute(rw, r, e) {
+				return
+			}
+			if api.HandleAll(rw, r, e, a.l) {
 				return
 			}
 
 			mux.ServeHTTP(rw, r)
-		}), &http2.Server{}),
+		})), &http2.Server{}),
 	}
 
 	go func() {
@@ -131,4 +144,14 @@ func (a *App) Run(ctx context.Context) error {
 	}
 
 	return shutdownRes
+}
+
+func handleCORS(h http.Handler) http.Handler {
+	return cors.New(cors.Options{
+		AllowedOrigins:   []string{`*`},
+		AllowedMethods:   []string{`POST`, `GET`},
+		AllowedHeaders:   []string{`*`},
+		AllowCredentials: true,
+		MaxAge:           600,
+	}).Handler(h)
 }

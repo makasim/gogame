@@ -12,14 +12,13 @@ func GameToData(g *v1.Game, d *flowstate.Data) error {
 		return err
 	}
 
-	d.ID = flowstate.DataID(g.Id)
-	d.B = b
+	d.Blob = b
 	return nil
 }
 
 func DataToGame(d *flowstate.Data) (*v1.Game, error) {
 	g := &v1.Game{}
-	if err := protojson.Unmarshal(d.B, g); err != nil {
+	if err := protojson.Unmarshal(d.Blob, g); err != nil {
 		return nil, err
 	}
 
@@ -27,15 +26,16 @@ func DataToGame(d *flowstate.Data) (*v1.Game, error) {
 }
 
 func FindGame(e flowstate.Engine, gID string, gRev int32) (*v1.Game, *flowstate.StateCtx, *flowstate.Data, error) {
-	d := &flowstate.Data{}
 	stateCtx := &flowstate.StateCtx{}
 
 	if err := e.Do(
 		flowstate.GetStateByID(stateCtx, flowstate.StateID(gID), int64(gRev)),
-		flowstate.GetData(stateCtx, d, `game`),
+		flowstate.GetData(stateCtx, `game`),
 	); err != nil {
 		return nil, nil, nil, err
 	}
+
+	d := stateCtx.MustData(`game`)
 
 	g, err := DataToGame(d)
 	if err != nil {

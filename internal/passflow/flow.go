@@ -1,7 +1,6 @@
-package makemovehandler
+package passflow
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -9,43 +8,35 @@ import (
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
 	"github.com/makasim/gogame/internal/movetimeoutflow"
+	"github.com/makasim/gogame/internal/promutil"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
 )
 
-type Handler struct {
-	e flowstate.Engine
+var ID flowstate.FlowID = `gogame.pass`
+
+type Flow struct {
 }
 
-func New(e flowstate.Engine) *Handler {
-	return &Handler{
-		e: e,
+func New() (flowstate.FlowID, *Flow) {
+	return ID, &Flow{}
+}
+
+func (f *Flow) Execute(reqStateCtx *flowstate.StateCtx, e flowstate.Engine) (flowstate.Command, error) {
+	msg := &v1.PassRequest{}
+	if err := promutil.UnmarshalRequest(reqStateCtx, msg); err != nil {
+		return nil, err
 	}
-}
-
-func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRequest]) (*connect.Response[v1.MakeMoveResponse], error) {
-	if req.Msg.GameId == `` {
+	if msg.GameId == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game id is required"))
 	}
-	if req.Msg.GameRev == 0 {
+	if msg.GameRev == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game rev is required"))
 	}
-	if req.Msg.Move == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move is required"))
-	}
-	if req.Msg.Move.PlayerId == `` {
+	if msg.PlayerId == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move player id is required"))
 	}
-	if req.Msg.Move.Color <= 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move color is required"))
-	}
-	if req.Msg.Move.X < 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move x is required"))
-	}
-	if req.Msg.Move.Y < 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move y is required"))
-	}
 
-	g, stateCtx, d, err := convertor.FindGame(h.e, req.Msg.GameId, req.Msg.GameRev)
+	g, stateCtx, d, err := convertor.FindGame(e, msg.GameId, msg.GameRev)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -53,46 +44,56 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 	if !(stateCtx.Current.Labels[`game.state`] == `started` || stateCtx.Current.Labels[`game.state`] == `move`) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("state is not move"))
 	}
-	if g.CurrentMove.PlayerId != req.Msg.Move.PlayerId {
+	if g.CurrentMove.PlayerId != msg.PlayerId {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("not player's turn"))
 	}
 
-	b, err := convertor.GameToBoard(g)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	nextMove := &v1.Move{
+	g.PreviousMoves = append(g.PreviousMoves, &v1.Move{
 		PlayerId: g.CurrentMove.PlayerId,
 		Color:    g.CurrentMove.Color,
-		X:        req.Msg.Move.X,
-		Y:        req.Msg.Move.Y,
-	}
+		Pass:     true,
+	})
 
-	l, err := b.PlaceStone(convertor.ToClamMove(nextMove))
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
+	if len(g.PreviousMoves) > 1 && g.PreviousMoves[len(g.PreviousMoves)-2].Pass {
+		stateCtx.Current.SetLabel(`game.state`, `ended`)
+		g.State = v1.State_STATE_ENDED
 
-	convertor.CurrentPlayer(g).CapturedStones += int32(len(l))
+		// TODO: add decide on winner algorithm
+		g.Winner = convertor.CurrentPlayer(g)
+		g.WonBy = `score`
+
+		if err = convertor.GameToData(g, d); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+
+		if err := e.Do(flowstate.Commit(
+			flowstate.StoreData(stateCtx, `game`),
+			flowstate.Park(stateCtx),
+		)); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+
+		g.Rev = int32(stateCtx.Current.Rev)
+
+		return flowstate.Noop(), promutil.MarshalResponse(reqStateCtx, &v1.PassResponse{
+			Game: g,
+		})
+	}
 
 	g.State = v1.State_STATE_MOVE
 	stateCtx.Current.SetLabel(`game.state`, `move`)
-
-	g.PreviousMoves = append(g.PreviousMoves, nextMove)
 	g.CurrentMove = &v1.Move{
 		PlayerId: convertor.NextPlayer(g).Id,
 		Color:    convertor.NextColor(g),
 		EndAt:    time.Now().Add(time.Duration(g.MoveDurationSec) * time.Second).Unix(),
 	}
-	g.Board = convertor.FromClamBoard(b)
 
 	if err = convertor.GameToData(g, d); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	if err := h.e.Do(flowstate.Commit(
-		flowstate.AttachData(stateCtx, d, `game`),
+	if err := e.Do(flowstate.Commit(
+		flowstate.StoreData(stateCtx, `game`),
 		flowstate.Park(stateCtx),
 		flowstate.Delay(stateCtx, movetimeoutflow.ID, time.Duration(g.MoveDurationSec)*time.Second),
 	)); err != nil {
@@ -101,7 +102,7 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 
 	g.Rev = int32(stateCtx.Current.Rev)
 
-	return connect.NewResponse(&v1.MakeMoveResponse{
+	return flowstate.Noop(), promutil.MarshalResponse(reqStateCtx, &v1.PassResponse{
 		Game: g,
-	}), nil
+	})
 }

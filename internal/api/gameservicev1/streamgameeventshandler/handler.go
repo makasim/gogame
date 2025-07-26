@@ -43,18 +43,18 @@ func (h *Handler) StreamGameEvents(ctx context.Context, req *connect.Request[v1.
 				gID := state.Annotations[`game.id`]
 				gRev, _ := strconv.ParseInt(state.Annotations[`game.rev`], 10, 0)
 
-				d := &flowstate.Data{}
 				stateCtx := &flowstate.StateCtx{}
-
 				undoStateCtx := state.CopyToCtx(&flowstate.StateCtx{})
-				undoD := &flowstate.Data{}
 				if err := h.e.Do(
 					flowstate.GetStateByID(stateCtx, flowstate.StateID(gID), gRev),
-					flowstate.GetData(stateCtx, d, `game`),
-					flowstate.GetData(undoStateCtx, undoD, `undo`),
+					flowstate.GetData(stateCtx, `game`),
+					flowstate.GetData(undoStateCtx, `undo`),
 				); err != nil {
 					continue
 				}
+
+				d := stateCtx.MustData(`game`)
+				undoD := undoStateCtx.MustData(`undo`)
 
 				u, err := convertor.DataToUndo(undoD)
 				if err != nil {
