@@ -7,7 +7,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
-	"github.com/makasim/gogame/internal/endedflow"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
 )
 
@@ -34,7 +33,7 @@ func (h *Handler) Resign(_ context.Context, req *connect.Request[v1.ResignReques
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	if stateCtx.Current.Transition.To == endedflow.ID {
+	if stateCtx.Current.Labels[`game.state`] == `ended` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game has already ended"))
 	}
 
@@ -49,7 +48,7 @@ func (h *Handler) Resign(_ context.Context, req *connect.Request[v1.ResignReques
 
 	if err := h.e.Do(flowstate.Commit(
 		flowstate.AttachData(stateCtx, d, `game`),
-		flowstate.Pause(stateCtx).WithTransit(endedflow.ID),
+		flowstate.Park(stateCtx),
 	)); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

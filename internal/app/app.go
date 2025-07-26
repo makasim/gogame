@@ -23,9 +23,7 @@ import (
 	"github.com/makasim/gogame/internal/api/gameservicev1/streamgameeventshandler"
 	"github.com/makasim/gogame/internal/api/gameservicev1/streamvacantgameshandler"
 	"github.com/makasim/gogame/internal/api/gameservicev1/undohandler"
-	"github.com/makasim/gogame/internal/createdflow"
-	"github.com/makasim/gogame/internal/endedflow"
-	"github.com/makasim/gogame/internal/moveflow"
+	"github.com/makasim/gogame/internal/movetimeoutflow"
 	"github.com/makasim/gogame/internal/staleflow"
 	"github.com/makasim/gogame/protogen/gogame/v1/gogamev1connect"
 	"github.com/makasim/gogame/ui"
@@ -70,14 +68,8 @@ func (a *App) Run(ctx context.Context) error {
 	fr := netflow.NewRegistry(httpHost, d, a.l)
 	defer fr.Close()
 
-	if err := fr.SetFlow(createdflow.New()); err != nil {
-		return fmt.Errorf("set flow created: %w", err)
-	}
-	if err := fr.SetFlow(moveflow.New()); err != nil {
+	if err := fr.SetFlow(movetimeoutflow.New()); err != nil {
 		return fmt.Errorf("set flow move: %w", err)
-	}
-	if err := fr.SetFlow(endedflow.New()); err != nil {
-		return fmt.Errorf("set flow ended: %w", err)
 	}
 	if err := fr.SetFlow(staleflow.New()); err != nil {
 		return fmt.Errorf("set flow stale: %w", err)

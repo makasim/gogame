@@ -1,4 +1,4 @@
-package staleflow
+package movetimeoutflow
 
 import (
 	"github.com/makasim/flowstate"
@@ -6,7 +6,7 @@ import (
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
 )
 
-var ID flowstate.FlowID = `stale`
+var ID flowstate.FlowID = `movetimeout`
 
 type Flow struct {
 }
@@ -17,7 +17,10 @@ func New() (flowstate.FlowID, *Flow) {
 
 func (f *Flow) Execute(stateCtx *flowstate.StateCtx, e flowstate.Engine) (flowstate.Command, error) {
 	d := &flowstate.Data{}
-	if err := e.Do(flowstate.GetData(stateCtx, d, `game`)); err != nil {
+
+	if err := e.Do(
+		flowstate.GetData(stateCtx, d, `game`),
+	); err != nil {
 		return nil, err
 	}
 
@@ -30,7 +33,8 @@ func (f *Flow) Execute(stateCtx *flowstate.StateCtx, e flowstate.Engine) (flowst
 
 	stateCtx.Current.SetLabel(`game.state`, `ended`)
 	g.State = v1.State_STATE_ENDED
-	g.WonBy = `not_started`
+	g.Winner = convertor.NextPlayer(g)
+	g.WonBy = `timeout`
 
 	if err = convertor.GameToData(g, d); err != nil {
 		return nil, err

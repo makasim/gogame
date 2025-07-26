@@ -9,8 +9,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
-	"github.com/makasim/gogame/internal/createdflow"
-	"github.com/makasim/gogame/internal/moveflow"
+	"github.com/makasim/gogame/internal/movetimeoutflow"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
 	"github.com/otrego/clamshell/go/board"
 )
@@ -38,7 +37,7 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	if stateCtx.Current.Transition.To != createdflow.ID {
+	if stateCtx.Current.Labels[`game.state`] != `created` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game is not joinable"))
 	}
 	if g.Player1.Id == req.Msg.Player2.Id {
@@ -59,8 +58,8 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 
 	if err := h.e.Do(flowstate.Commit(
 		flowstate.AttachData(stateCtx, d, `game`),
-		flowstate.Pause(stateCtx).WithTransit(moveflow.ID),
-		flowstate.Delay(stateCtx, time.Duration(g.MoveDurationSec)*time.Second).WithCommit(true),
+		flowstate.Park(stateCtx),
+		flowstate.Delay(stateCtx, movetimeoutflow.ID, time.Duration(g.MoveDurationSec)*time.Second),
 	)); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

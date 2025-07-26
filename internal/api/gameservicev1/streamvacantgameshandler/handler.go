@@ -29,7 +29,7 @@ func (h *Handler) StreamVacantGames(ctx context.Context, _ *connect.Request[v1.S
 		`game.state`: `ended`,
 	}).WithSinceTime(time.Now().Add(-time.Minute * 5))
 
-	w := flowstate.NewWatcher(h.e, time.Second*5, getManyCmd)
+	w := flowstate.NewWatcher(h.e, time.Second*2, getManyCmd)
 	defer w.Close()
 
 	for {

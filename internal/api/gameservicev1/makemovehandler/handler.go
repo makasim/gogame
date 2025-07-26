@@ -8,7 +8,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
-	"github.com/makasim/gogame/internal/moveflow"
+	"github.com/makasim/gogame/internal/movetimeoutflow"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
 )
 
@@ -50,7 +50,7 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	if stateCtx.Current.Transition.To != moveflow.ID {
+	if !(stateCtx.Current.Labels[`game.state`] == `started` || stateCtx.Current.Labels[`game.state`] == `move`) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("state is not move"))
 	}
 	if g.CurrentMove.PlayerId != req.Msg.Move.PlayerId {
@@ -93,8 +93,8 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 
 	if err := h.e.Do(flowstate.Commit(
 		flowstate.AttachData(stateCtx, d, `game`),
-		flowstate.Pause(stateCtx).WithTransit(moveflow.ID),
-		flowstate.Delay(stateCtx, time.Duration(g.MoveDurationSec)*time.Second).WithCommit(true),
+		flowstate.Park(stateCtx),
+		flowstate.Delay(stateCtx, movetimeoutflow.ID, time.Duration(g.MoveDurationSec)*time.Second),
 	)); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

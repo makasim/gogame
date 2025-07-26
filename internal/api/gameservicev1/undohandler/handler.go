@@ -8,8 +8,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
-	"github.com/makasim/gogame/internal/moveflow"
-	"github.com/makasim/gogame/internal/undoflow"
+	"github.com/makasim/gogame/internal/movetimeoutflow"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
 )
 
@@ -76,7 +75,7 @@ func (h *Handler) Undo(_ context.Context, req *connect.Request[v1.UndoRequest]) 
 
 		if err := h.e.Do(flowstate.Commit(
 			flowstate.AttachData(undoStateCtx, undoD, `undo`),
-			flowstate.Pause(undoStateCtx).WithTransit(undoflow.ID),
+			flowstate.Park(undoStateCtx),
 		)); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
@@ -121,7 +120,7 @@ func (h *Handler) Undo(_ context.Context, req *connect.Request[v1.UndoRequest]) 
 		if !undo.Accepted {
 			if err := h.e.Do(flowstate.Commit(
 				flowstate.AttachData(undoStateCtx, undoD, `undo`),
-				flowstate.Pause(undoStateCtx).WithTransit(undoflow.ID),
+				flowstate.Park(undoStateCtx),
 			)); err != nil {
 				return nil, connect.NewError(connect.CodeInternal, err)
 			}
@@ -151,8 +150,9 @@ func (h *Handler) Undo(_ context.Context, req *connect.Request[v1.UndoRequest]) 
 		if err := h.e.Do(flowstate.Commit(
 			flowstate.AttachData(undoStateCtx, undoD, `undo`),
 			flowstate.AttachData(stateCtx, d, `game`),
-			flowstate.Pause(undoStateCtx).WithTransit(undoflow.ID),
-			flowstate.Pause(stateCtx).WithTransit(moveflow.ID),
+			flowstate.Park(undoStateCtx),
+			flowstate.Park(stateCtx),
+			flowstate.Delay(stateCtx, movetimeoutflow.ID, time.Duration(g.MoveDurationSec)*time.Second),
 		)); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
