@@ -6,7 +6,7 @@ toolchain go1.24.3
 
 require (
 	connectrpc.com/connect v1.18.1
-	github.com/makasim/flowstate v0.0.0-20250726151856-1ee5b2631216
+	github.com/makasim/flowstate v0.0.0-20250726182313-372320ea0677
 	github.com/otrego/clamshell v0.0.0-20220814024334-043dd78cf746
 	github.com/rs/cors v1.11.1
 	golang.org/x/net v0.38.0
