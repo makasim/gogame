@@ -1,7 +1,6 @@
-package joingamehandler
+package joingameflow
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"time"
@@ -10,29 +9,33 @@ import (
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
 	"github.com/makasim/gogame/internal/movetimeoutflow"
+	"github.com/makasim/gogame/internal/promutil"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
 	"github.com/otrego/clamshell/go/board"
 )
 
-type Handler struct {
-	e flowstate.Engine
+var ID flowstate.FlowID = `gogame.join_game`
+
+type Flow struct {
 }
 
-func New(e flowstate.Engine) *Handler {
-	return &Handler{
-		e: e,
+func New() (flowstate.FlowID, *Flow) {
+	return ID, &Flow{}
+}
+
+func (f *Flow) Execute(reqStateCtx *flowstate.StateCtx, e flowstate.Engine) (flowstate.Command, error) {
+	msg := &v1.JoinGameRequest{}
+	if err := promutil.UnmarshalRequest(reqStateCtx, msg); err != nil {
+		return nil, err
 	}
-}
-
-func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRequest]) (*connect.Response[v1.JoinGameResponse], error) {
-	if req.Msg.GameId == `` {
+	if msg.GameId == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game id is required"))
 	}
-	if req.Msg.Player2.Name == `` {
+	if msg.Player2.Name == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("player2 name is required"))
 	}
 
-	g, stateCtx, d, err := convertor.FindGame(h.e, req.Msg.GameId, 0)
+	g, stateCtx, d, err := convertor.FindGame(e, msg.GameId, 0)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -40,13 +43,13 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 	if stateCtx.Current.Labels[`game.state`] != `created` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game is not joinable"))
 	}
-	if g.Player1.Id == req.Msg.Player2.Id {
+	if g.Player1.Id == msg.Player2.Id {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("player1 and player2 are the same"))
 	}
 
 	stateCtx.Current.SetLabel(`game.state`, `started`)
 
-	g.Player2 = req.Msg.Player2
+	g.Player2 = msg.Player2
 	g.State = v1.State_STATE_STARTED
 	chooseFirstMove(g)
 
@@ -56,8 +59,8 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	if err := h.e.Do(flowstate.Commit(
-		flowstate.AttachData(stateCtx, d, `game`),
+	if err := e.Do(flowstate.Commit(
+		flowstate.StoreData(stateCtx, `game`),
 		flowstate.Park(stateCtx),
 		flowstate.Delay(stateCtx, movetimeoutflow.ID, time.Duration(g.MoveDurationSec)*time.Second),
 	)); err != nil {
@@ -66,9 +69,9 @@ func (h *Handler) JoinGame(_ context.Context, req *connect.Request[v1.JoinGameRe
 
 	g.Rev = int32(stateCtx.Current.Rev)
 
-	return connect.NewResponse(&v1.JoinGameResponse{
+	return flowstate.Noop(), promutil.MarshalResponse(reqStateCtx, &v1.JoinGameResponse{
 		Game: g,
-	}), nil
+	})
 }
 
 func chooseFirstMove(g *v1.Game) {

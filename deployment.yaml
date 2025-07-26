@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
         - name: flowstatesrv
-          image: docker.io/makasim/flowstate:e662c53f
+          image: docker.io/makasim/flowstate:372320ea
           ports:
             - containerPort: 9282
           env:
