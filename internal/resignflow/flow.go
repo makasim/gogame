@@ -1,34 +1,37 @@
-package resignhandler
+package resignflow
 
 import (
-	"context"
 	"fmt"
 
 	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
+	"github.com/makasim/gogame/internal/promutil"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
 )
 
-type Handler struct {
-	e flowstate.Engine
+var ID flowstate.FlowID = `gogame.resign`
+
+type Flow struct {
 }
 
-func New(e flowstate.Engine) *Handler {
-	return &Handler{
-		e: e,
+func New() (flowstate.FlowID, *Flow) {
+	return ID, &Flow{}
+}
+
+func (f *Flow) Execute(reqStateCtx *flowstate.StateCtx, e *flowstate.Engine) (flowstate.Command, error) {
+	msg := &v1.ResignRequest{}
+	if err := promutil.UnmarshalRequest(reqStateCtx, msg); err != nil {
+		return nil, err
 	}
-}
-
-func (h *Handler) Resign(_ context.Context, req *connect.Request[v1.ResignRequest]) (*connect.Response[v1.ResignResponse], error) {
-	if req.Msg.GameId == `` {
+	if msg.GameId == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game id is required"))
 	}
-	if req.Msg.PlayerId == `` {
+	if msg.PlayerId == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("player id is required"))
 	}
 
-	g, stateCtx, d, err := convertor.FindGame(h.e, req.Msg.GameId, 0)
+	g, stateCtx, d, err := convertor.FindGame(e, msg.GameId, 0)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -46,8 +49,8 @@ func (h *Handler) Resign(_ context.Context, req *connect.Request[v1.ResignReques
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	if err := h.e.Do(flowstate.Commit(
-		flowstate.AttachData(stateCtx, d, `game`),
+	if err := e.Do(flowstate.Commit(
+		flowstate.StoreData(stateCtx, `game`),
 		flowstate.Park(stateCtx),
 	)); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -55,7 +58,7 @@ func (h *Handler) Resign(_ context.Context, req *connect.Request[v1.ResignReques
 
 	g.Rev = int32(stateCtx.Current.Rev)
 
-	return connect.NewResponse(&v1.ResignResponse{
+	return flowstate.Noop(), promutil.MarshalResponse(reqStateCtx, &v1.ResignResponse{
 		Game: g,
-	}), nil
+	})
 }

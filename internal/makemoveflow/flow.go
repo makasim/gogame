@@ -1,7 +1,6 @@
-package makemovehandler
+package makemoveflow
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -9,43 +8,47 @@ import (
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
 	"github.com/makasim/gogame/internal/movetimeoutflow"
+	"github.com/makasim/gogame/internal/promutil"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
 )
 
-type Handler struct {
-	e flowstate.Engine
+var ID flowstate.FlowID = `gogame.make_move`
+
+type Flow struct {
 }
 
-func New(e flowstate.Engine) *Handler {
-	return &Handler{
-		e: e,
+func New() (flowstate.FlowID, *Flow) {
+	return ID, &Flow{}
+}
+
+func (f *Flow) Execute(reqStateCtx *flowstate.StateCtx, e *flowstate.Engine) (flowstate.Command, error) {
+	msg := &v1.MakeMoveRequest{}
+	if err := promutil.UnmarshalRequest(reqStateCtx, msg); err != nil {
+		return nil, err
 	}
-}
-
-func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRequest]) (*connect.Response[v1.MakeMoveResponse], error) {
-	if req.Msg.GameId == `` {
+	if msg.GameId == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game id is required"))
 	}
-	if req.Msg.GameRev == 0 {
+	if msg.GameRev == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game rev is required"))
 	}
-	if req.Msg.Move == nil {
+	if msg.Move == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move is required"))
 	}
-	if req.Msg.Move.PlayerId == `` {
+	if msg.Move.PlayerId == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move player id is required"))
 	}
-	if req.Msg.Move.Color <= 0 {
+	if msg.Move.Color <= 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move color is required"))
 	}
-	if req.Msg.Move.X < 0 {
+	if msg.Move.X < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move x is required"))
 	}
-	if req.Msg.Move.Y < 0 {
+	if msg.Move.Y < 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("move y is required"))
 	}
 
-	g, stateCtx, d, err := convertor.FindGame(h.e, req.Msg.GameId, req.Msg.GameRev)
+	g, stateCtx, d, err := convertor.FindGame(e, msg.GameId, msg.GameRev)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -53,7 +56,7 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 	if !(stateCtx.Current.Labels[`game.state`] == `started` || stateCtx.Current.Labels[`game.state`] == `move`) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("state is not move"))
 	}
-	if g.CurrentMove.PlayerId != req.Msg.Move.PlayerId {
+	if g.CurrentMove.PlayerId != msg.Move.PlayerId {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("not player's turn"))
 	}
 
@@ -65,8 +68,8 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 	nextMove := &v1.Move{
 		PlayerId: g.CurrentMove.PlayerId,
 		Color:    g.CurrentMove.Color,
-		X:        req.Msg.Move.X,
-		Y:        req.Msg.Move.Y,
+		X:        msg.Move.X,
+		Y:        msg.Move.Y,
 	}
 
 	l, err := b.PlaceStone(convertor.ToClamMove(nextMove))
@@ -91,8 +94,8 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	if err := h.e.Do(flowstate.Commit(
-		flowstate.AttachData(stateCtx, d, `game`),
+	if err := e.Do(flowstate.Commit(
+		flowstate.StoreData(stateCtx, `game`),
 		flowstate.Park(stateCtx),
 		flowstate.Delay(stateCtx, movetimeoutflow.ID, time.Duration(g.MoveDurationSec)*time.Second),
 	)); err != nil {
@@ -101,7 +104,7 @@ func (h *Handler) MakeMove(_ context.Context, req *connect.Request[v1.MakeMoveRe
 
 	g.Rev = int32(stateCtx.Current.Rev)
 
-	return connect.NewResponse(&v1.MakeMoveResponse{
+	return flowstate.Noop(), promutil.MarshalResponse(reqStateCtx, &v1.MakeMoveResponse{
 		Game: g,
-	}), nil
+	})
 }

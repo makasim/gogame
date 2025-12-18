@@ -1,42 +1,47 @@
-package creategamehandler
+package creategameflow
 
 import (
-	"context"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/api/convertor"
+	"github.com/makasim/gogame/internal/promutil"
 	"github.com/makasim/gogame/internal/staleflow"
 	v1 "github.com/makasim/gogame/protogen/gogame/v1"
 )
 
-type Handler struct {
-	e flowstate.Engine
+var ID flowstate.FlowID = `gogame.create_game`
+
+type Flow struct {
 }
 
-func New(e flowstate.Engine) *Handler {
-	return &Handler{
-		e: e,
+func New() (flowstate.FlowID, *Flow) {
+	return ID, &Flow{}
+}
+
+func (f *Flow) Execute(reqStateCtx *flowstate.StateCtx, e *flowstate.Engine) (flowstate.Command, error) {
+	msg := &v1.CreateGameRequest{}
+	if err := promutil.UnmarshalRequest(reqStateCtx, msg); err != nil {
+		log.Println(123, err)
+		return nil, err
 	}
-}
-
-func (h *Handler) CreateGame(_ context.Context, req *connect.Request[v1.CreateGameRequest]) (*connect.Response[v1.CreateGameResponse], error) {
-	if req.Msg.Name == `` {
+	if msg.Name == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("game name is required"))
 	}
-	if req.Msg.Player1 != nil && req.Msg.Player1.Name == `` {
+	if msg.Player1 != nil && msg.Player1.Name == `` {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("player1 name is required"))
 	}
 
 	g := &v1.Game{
 		Id:              strconv.FormatInt(time.Now().UnixNano(), 10),
-		Name:            req.Msg.Name,
-		Player1:         req.Msg.Player1,
+		Name:            msg.Name,
+		Player1:         msg.Player1,
 		State:           v1.State_STATE_CREATED,
-		MoveDurationSec: req.Msg.MoveDurationSec,
+		MoveDurationSec: msg.MoveDurationSec,
 	}
 	if g.MoveDurationSec == 0 {
 		g.MoveDurationSec = 60
@@ -56,10 +61,13 @@ func (h *Handler) CreateGame(_ context.Context, req *connect.Request[v1.CreateGa
 				`game.state`: `created`,
 			},
 		},
+		Datas: map[string]*flowstate.Data{
+			"game": d,
+		},
 	}
 
-	if err := h.e.Do(flowstate.Commit(
-		flowstate.AttachData(stateCtx, d, `game`),
+	if err := e.Do(flowstate.Commit(
+		flowstate.StoreData(stateCtx, `game`),
 		flowstate.Park(stateCtx),
 		flowstate.Delay(stateCtx, staleflow.ID, time.Minute),
 	)); err != nil {
@@ -68,7 +76,7 @@ func (h *Handler) CreateGame(_ context.Context, req *connect.Request[v1.CreateGa
 
 	g.Rev = int32(stateCtx.Current.Rev)
 
-	return connect.NewResponse(&v1.CreateGameResponse{
+	return flowstate.Noop(), promutil.MarshalResponse(reqStateCtx, &v1.CreateGameResponse{
 		Game: g,
-	}), nil
+	})
 }

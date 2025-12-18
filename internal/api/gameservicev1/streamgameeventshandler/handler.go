@@ -3,7 +3,6 @@ package streamgameeventshandler
 import (
 	"context"
 	"strconv"
-	"time"
 
 	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
@@ -12,10 +11,10 @@ import (
 )
 
 type Handler struct {
-	e flowstate.Engine
+	e *flowstate.Engine
 }
 
-func New(e flowstate.Engine) *Handler {
+func New(e *flowstate.Engine) *Handler {
 	return &Handler{
 		e: e,
 	}
@@ -33,7 +32,7 @@ func (h *Handler) StreamGameEvents(ctx context.Context, req *connect.Request[v1.
 		`undo.game.id`: req.Msg.GameId,
 	}).WithSinceLatest()
 
-	w := flowstate.NewWatcher(h.e, time.Millisecond*500, getManyCmd)
+	w := flowstate.NewWatcher(h.e, getManyCmd)
 	defer w.Close()
 
 	for {
@@ -43,18 +42,18 @@ func (h *Handler) StreamGameEvents(ctx context.Context, req *connect.Request[v1.
 				gID := state.Annotations[`game.id`]
 				gRev, _ := strconv.ParseInt(state.Annotations[`game.rev`], 10, 0)
 
-				d := &flowstate.Data{}
 				stateCtx := &flowstate.StateCtx{}
-
 				undoStateCtx := state.CopyToCtx(&flowstate.StateCtx{})
-				undoD := &flowstate.Data{}
 				if err := h.e.Do(
 					flowstate.GetStateByID(stateCtx, flowstate.StateID(gID), gRev),
-					flowstate.GetData(stateCtx, d, `game`),
-					flowstate.GetData(undoStateCtx, undoD, `undo`),
+					flowstate.GetData(stateCtx, `game`),
+					flowstate.GetData(undoStateCtx, `undo`),
 				); err != nil {
 					continue
 				}
+
+				d := stateCtx.MustData(`game`)
+				undoD := undoStateCtx.MustData(`undo`)
 
 				u, err := convertor.DataToUndo(undoD)
 				if err != nil {

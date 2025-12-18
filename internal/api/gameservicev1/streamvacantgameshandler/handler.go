@@ -11,10 +11,10 @@ import (
 )
 
 type Handler struct {
-	e flowstate.Engine
+	e *flowstate.Engine
 }
 
-func New(e flowstate.Engine) *Handler {
+func New(e *flowstate.Engine) *Handler {
 	return &Handler{
 		e: e,
 	}
@@ -29,7 +29,7 @@ func (h *Handler) StreamVacantGames(ctx context.Context, _ *connect.Request[v1.S
 		`game.state`: `ended`,
 	}).WithSinceTime(time.Now().Add(-time.Minute * 5))
 
-	w := flowstate.NewWatcher(h.e, time.Second*2, getManyCmd)
+	w := flowstate.NewWatcher(h.e, getManyCmd)
 	defer w.Close()
 
 	for {
