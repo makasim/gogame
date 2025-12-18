@@ -2,7 +2,6 @@ package promutil
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -20,31 +19,26 @@ func WriteOK(rw http.ResponseWriter, d *flowstate.Data) {
 	_, _ = rw.Write(d.Blob)
 }
 
-func WriteError(rw http.ResponseWriter, err error, proto bool) {
-	var connErr *connect.Error
-	if errors.As(err, &connErr) {
-		switch connErr.Code() {
-		case connect.CodeInvalidArgument:
-			WriteInvalidArgumentError(rw, connErr.Message(), proto)
-		case connect.CodeUnknown:
-			WriteUnknownError(rw, connErr.Message(), proto)
-		//case connect.CodeInternal:
-		//	WriteInternalError(rw, connErr.Message(), proto)
-		//case connect.CodeUnimplemented:
-		//	WriteUnimplementedError(rw, connErr.Message(), proto)
-		case connect.CodeNotFound:
-			WriteNotFoundError(rw, connErr.Message(), proto)
-		//case connect.CodeAlreadyExists:
-		//	WriteAlreadyExistsError(rw, connErr.Message(), proto)
-		//case connect.CodeUnauthenticated:
-		//	WriteUnauthenticatedError(rw, connErr.Message(), proto)
-		//case connect.CodePermissionDenied:
-		//	WritePermissionDeniedError(rw, connErr.Message(), proto)
-		default:
-			WriteUnknownError(rw, connErr.Message(), proto)
-		}
-	} else {
-		WriteUnknownError(rw, err.Error(), proto)
+func WriteConnectError(rw http.ResponseWriter, err *connect.Error, proto bool) {
+	switch err.Code() {
+	case connect.CodeInvalidArgument:
+		WriteInvalidArgumentError(rw, err.Message(), proto)
+	case connect.CodeUnknown:
+		WriteUnknownError(rw, err.Message(), proto)
+	//case connect.CodeInternal:
+	//	WriteInternalError(rw, connErr.Message(), proto)
+	//case connect.CodeUnimplemented:
+	//	WriteUnimplementedError(rw, connErr.Message(), proto)
+	case connect.CodeNotFound:
+		WriteNotFoundError(rw, err.Message(), proto)
+	//case connect.CodeAlreadyExists:
+	//	WriteAlreadyExistsError(rw, connErr.Message(), proto)
+	//case connect.CodeUnauthenticated:
+	//	WriteUnauthenticatedError(rw, connErr.Message(), proto)
+	//case connect.CodePermissionDenied:
+	//	WritePermissionDeniedError(rw, connErr.Message(), proto)
+	default:
+		WriteUnknownError(rw, err.Message(), proto)
 	}
 }
 
@@ -127,7 +121,7 @@ func UnmarshalRequest(stateCtx *flowstate.StateCtx, msg proto.Message) error {
 	// Unmarshal based on content-type annotation
 	contentType := reqData.Annotations["content-type"]
 	switch contentType {
-	case "application/protobuf", "application/x-protobuf":
+	case "application/proto", "application/protobuf", "application/x-protobuf":
 		if err := proto.Unmarshal(reqData.Blob, msg); err != nil {
 			return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("failed to unmarshal protobuf request: %w", err))
 		}
@@ -153,7 +147,7 @@ func MarshalResponse(stateCtx *flowstate.StateCtx, msg proto.Message) error {
 
 	contentType := respData.Annotations["content-type"]
 	switch contentType {
-	case "application/protobuf", "application/x-protobuf":
+	case "application/proto", "application/protobuf", "application/x-protobuf":
 		b, err := proto.Marshal(msg)
 		if err != nil {
 			return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("failed to unmarshal protobuf request: %w", err))

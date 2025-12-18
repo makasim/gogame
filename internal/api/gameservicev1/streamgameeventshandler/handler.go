@@ -3,7 +3,6 @@ package streamgameeventshandler
 import (
 	"context"
 	"strconv"
-	"time"
 
 	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
@@ -12,10 +11,10 @@ import (
 )
 
 type Handler struct {
-	e flowstate.Engine
+	e *flowstate.Engine
 }
 
-func New(e flowstate.Engine) *Handler {
+func New(e *flowstate.Engine) *Handler {
 	return &Handler{
 		e: e,
 	}
@@ -33,7 +32,7 @@ func (h *Handler) StreamGameEvents(ctx context.Context, req *connect.Request[v1.
 		`undo.game.id`: req.Msg.GameId,
 	}).WithSinceLatest()
 
-	w := flowstate.NewWatcher(h.e, time.Millisecond*500, getManyCmd)
+	w := flowstate.NewWatcher(h.e, getManyCmd)
 	defer w.Close()
 
 	for {

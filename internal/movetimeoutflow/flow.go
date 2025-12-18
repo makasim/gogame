@@ -15,7 +15,7 @@ func New() (flowstate.FlowID, *Flow) {
 	return ID, &Flow{}
 }
 
-func (f *Flow) Execute(stateCtx *flowstate.StateCtx, e flowstate.Engine) (flowstate.Command, error) {
+func (f *Flow) Execute(stateCtx *flowstate.StateCtx, e *flowstate.Engine) (flowstate.Command, error) {
 	if err := e.Do(
 		flowstate.GetData(stateCtx, `game`),
 	); err != nil {

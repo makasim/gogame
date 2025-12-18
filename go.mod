@@ -1,13 +1,11 @@
 module github.com/makasim/gogame
 
-go 1.24.0
-
-toolchain go1.24.3
+go 1.25.0
 
 require (
 	connectrpc.com/connect v1.19.0
 	github.com/VictoriaMetrics/easyproto v0.1.4
-	github.com/makasim/flowstate v0.0.0-20250928165947-4916d95f4b01
+	github.com/makasim/flowstate v0.0.0-20251218184031-0e9c4f429547
 	github.com/oklog/ulid/v2 v2.1.1
 	github.com/otrego/clamshell v0.0.0-20220814024334-043dd78cf746
 	github.com/rs/cors v1.11.1

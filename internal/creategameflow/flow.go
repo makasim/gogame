@@ -2,6 +2,7 @@ package creategameflow
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -22,9 +23,10 @@ func New() (flowstate.FlowID, *Flow) {
 	return ID, &Flow{}
 }
 
-func (f *Flow) Execute(reqStateCtx *flowstate.StateCtx, e flowstate.Engine) (flowstate.Command, error) {
+func (f *Flow) Execute(reqStateCtx *flowstate.StateCtx, e *flowstate.Engine) (flowstate.Command, error) {
 	msg := &v1.CreateGameRequest{}
 	if err := promutil.UnmarshalRequest(reqStateCtx, msg); err != nil {
+		log.Println(123, err)
 		return nil, err
 	}
 	if msg.Name == `` {

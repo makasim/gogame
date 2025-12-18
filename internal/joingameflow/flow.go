@@ -23,7 +23,7 @@ func New() (flowstate.FlowID, *Flow) {
 	return ID, &Flow{}
 }
 
-func (f *Flow) Execute(reqStateCtx *flowstate.StateCtx, e flowstate.Engine) (flowstate.Command, error) {
+func (f *Flow) Execute(reqStateCtx *flowstate.StateCtx, e *flowstate.Engine) (flowstate.Command, error) {
 	msg := &v1.JoinGameRequest{}
 	if err := promutil.UnmarshalRequest(reqStateCtx, msg); err != nil {
 		return nil, err

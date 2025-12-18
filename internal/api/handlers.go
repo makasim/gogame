@@ -1,10 +1,12 @@
 package api
 
 import (
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
 
+	"connectrpc.com/connect"
 	"github.com/makasim/flowstate"
 	"github.com/makasim/gogame/internal/creategameflow"
 	"github.com/makasim/gogame/internal/joingameflow"
@@ -16,7 +18,7 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-func HandleAll(rw http.ResponseWriter, r *http.Request, e flowstate.Engine, l *slog.Logger) bool {
+func HandleAll(rw http.ResponseWriter, r *http.Request, e *flowstate.Engine, l *slog.Logger) bool {
 	if HandleCreateGame(rw, r, e, l) {
 		return true
 	}
@@ -39,7 +41,7 @@ func HandleAll(rw http.ResponseWriter, r *http.Request, e flowstate.Engine, l *s
 	return false
 }
 
-func HandleCreateGame(rw http.ResponseWriter, r *http.Request, e flowstate.Engine, l *slog.Logger) bool {
+func HandleCreateGame(rw http.ResponseWriter, r *http.Request, e *flowstate.Engine, l *slog.Logger) bool {
 	if r.URL.Path != "/gogame.v1.GameService/CreateGame" {
 		return false
 	}
@@ -48,7 +50,7 @@ func HandleCreateGame(rw http.ResponseWriter, r *http.Request, e flowstate.Engin
 	return res
 }
 
-func HandleJoinGame(rw http.ResponseWriter, r *http.Request, e flowstate.Engine, l *slog.Logger) bool {
+func HandleJoinGame(rw http.ResponseWriter, r *http.Request, e *flowstate.Engine, l *slog.Logger) bool {
 	if r.URL.Path != "/gogame.v1.GameService/JoinGame" {
 		return false
 	}
@@ -57,7 +59,7 @@ func HandleJoinGame(rw http.ResponseWriter, r *http.Request, e flowstate.Engine,
 	return res
 }
 
-func HandleMakeMove(rw http.ResponseWriter, r *http.Request, e flowstate.Engine, l *slog.Logger) bool {
+func HandleMakeMove(rw http.ResponseWriter, r *http.Request, e *flowstate.Engine, l *slog.Logger) bool {
 	if r.URL.Path != "/gogame.v1.GameService/MakeMove" {
 		return false
 	}
@@ -66,7 +68,7 @@ func HandleMakeMove(rw http.ResponseWriter, r *http.Request, e flowstate.Engine,
 	return res
 }
 
-func HandleResign(rw http.ResponseWriter, r *http.Request, e flowstate.Engine, l *slog.Logger) bool {
+func HandleResign(rw http.ResponseWriter, r *http.Request, e *flowstate.Engine, l *slog.Logger) bool {
 	if r.URL.Path != "/gogame.v1.GameService/Resign" {
 		return false
 	}
@@ -75,7 +77,7 @@ func HandleResign(rw http.ResponseWriter, r *http.Request, e flowstate.Engine, l
 	return res
 }
 
-func HandlePass(rw http.ResponseWriter, r *http.Request, e flowstate.Engine, l *slog.Logger) bool {
+func HandlePass(rw http.ResponseWriter, r *http.Request, e *flowstate.Engine, l *slog.Logger) bool {
 	if r.URL.Path != "/gogame.v1.GameService/Pass" {
 		return false
 	}
@@ -84,7 +86,7 @@ func HandlePass(rw http.ResponseWriter, r *http.Request, e flowstate.Engine, l *
 	return res
 }
 
-func HandleUndo(rw http.ResponseWriter, r *http.Request, e flowstate.Engine, l *slog.Logger) bool {
+func HandleUndo(rw http.ResponseWriter, r *http.Request, e *flowstate.Engine, l *slog.Logger) bool {
 	if r.URL.Path != "/gogame.v1.GameService/Undo" {
 		return false
 	}
@@ -93,7 +95,7 @@ func HandleUndo(rw http.ResponseWriter, r *http.Request, e flowstate.Engine, l *
 	return res
 }
 
-func handleFlow(rw http.ResponseWriter, r *http.Request, e flowstate.Engine, fID flowstate.FlowID, _ *slog.Logger) bool {
+func handleFlow(rw http.ResponseWriter, r *http.Request, e *flowstate.Engine, fID flowstate.FlowID, l *slog.Logger) bool {
 	proto := r.Header.Get("Content-Type") != "application/json"
 
 	b, err := io.ReadAll(r.Body)
@@ -120,7 +122,14 @@ func handleFlow(rw http.ResponseWriter, r *http.Request, e flowstate.Engine, fID
 	}
 
 	if err := e.Execute(stateCtx); err != nil {
-		promutil.WriteError(rw, err, proto)
+		var connErr *connect.Error
+		if errors.As(err, &connErr) {
+			promutil.WriteConnectError(rw, connErr, proto)
+			return true
+		}
+
+		l.Error("engine execute", "flow", stateCtx.Current.Transition.To, "error", err)
+		promutil.WriteUnknownError(rw, err.Error(), proto)
 		return true
 	}
 
