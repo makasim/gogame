@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/makasim/flowstate"
-	"github.com/makasim/flowstate/memdriver"
+	"github.com/makasim/flowstate/netdriver"
 	"github.com/makasim/flowstate/netflow"
 	"github.com/makasim/gogame/internal/api"
 	"github.com/makasim/gogame/internal/api/gameservicev1"
@@ -57,8 +57,8 @@ func (a *App) Run(ctx context.Context) error {
 
 	a.l.Info("connecting to flowstate at: " + flowstateHttpHost)
 
-	d := memdriver.New(a.l)
-	//d := netdriver.New(flowstateHttpHost)
+	//d := memdriver.New(a.l)
+	d := netdriver.New(flowstateHttpHost)
 
 	httpHost := os.Getenv("HTTP_HOST")
 	if httpHost == "" {

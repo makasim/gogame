@@ -1,0 +1,26 @@
+services:
+  flowstate-gogame:
+    image: 'docker.io/makasim/flowstate:20c5d03'
+    environment:
+      - 'FLOWSTATE_ADDR=0.0.0.0:9282'
+      - 'CORS_ENABLED=true'
+      - 'FLOWSTATE_DRIVER=badgerdriver'
+      - 'FLOWSTATE_BADGERDRIVER_PATH=/badgerdb'
+    volumes:
+      - '/mnt/disk/gogame/flowstate-data:/badgerdb'
+    x-ports:
+      - 'flowstate-gogame.makasim.com:9282/https'
+    x-machines: 'srv-2'
+
+  gogame:
+    build: .
+    environment:
+      - 'FLOWSTATE_HTTP_HOST=http://flowstate-gogame.internal:9282'
+      - 'CORS_ENABLED=true'
+      - 'HTTP_HOST=http://gogame.gogame.svc:8181'
+    volumes:
+      - '/mnt/disk/registry-data:/var/lib/registry'
+    x-ports:
+      - 'gogame.makasim.com:8181/https'
+    x-machines: 'srv-2'
+
