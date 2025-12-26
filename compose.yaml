@@ -17,7 +17,7 @@ services:
     environment:
       - 'FLOWSTATE_HTTP_HOST=http://flowstate-gogame.internal:9282'
       - 'CORS_ENABLED=true'
-      - 'HTTP_HOST=http://gogame.gogame.svc:8181'
+      - 'HTTP_HOST=http://gogame.internal:8181'
     volumes:
       - '/mnt/disk/registry-data:/var/lib/registry'
     x-ports:
